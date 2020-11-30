@@ -46,6 +46,19 @@
 ;; * working-revision                   DONE
 ;; * checkout-model                     DONE
 ;; - mode-line-string                   NOT IMPLEMENTED
+;;
+;; STATE-CHANGING FUNCTIONS:
+;; * create-repo                        NOT IMPLEMENTED
+;;                           I don't think got init does
+;;                           what this function is supposed
+;;                           to do.
+;; * register                           DONE
+;; - responsible-p                      DONE
+;; - receive-file                       NOT IMPLEMENTED
+;; - unregister                         NOT IMPLEMENTED
+;;                           use remove?
+;; * checkin                            DONE
+;; * find-revision                      DONE
 
 ;; TODO: use the idiom
 ;;      (let (process-file-side-effects) ...)
@@ -59,6 +72,7 @@
 
 (require 'cl-lib)
 (require 'seq)
+(require 'vc)
 
 (defvar vc-got-cmd "got"
   "The got command.")
@@ -80,10 +94,20 @@
   "Call `vc-got-cmd' in the `default-directory' with ARGS and put the output in the current buffer."
   (apply #'process-file vc-got-cmd nil (current-buffer) nil args))
 
-(defun vc-got--log (limit path)
-  "Execute the log command in the worktree of PATH, with LIMIT commits, and put the output in the current buffer.
+(defun vc-got--add (files)
+  "Add FILES to got, passing `vc-register-switches' to the command invocation."
+  (with-temp-buffer
+    (apply #'vc-got--call "add" (append vc-register-switches files))))
 
-Return nil if the command failed or if PATH isn't included in any worktree."
+(defun vc-got--log (limit path)
+  "Execute the log command in the worktree of PATH.
+
+The output of the command will be put in the current-buffer.
+
+LIMIT limits the maximum number of commit returned.
+
+Return nil if the command failed or if PATH isn't included in any
+worktree."
   (vc-got-with-worktree path
     (zerop (vc-got--call "log" "-l" (format "%s" limit) path))))
 
@@ -124,6 +148,33 @@ DIR-OR-FILE."
   (cl-loop for line in (split-string output "\n" t)
            collect (cl-destructuring-bind (status file) (split-string line " " t " ")
                      `(,file . ,(vc-got--parse-status-flag status)))))
+
+(defun vc-got--tree-parse ()
+  "Parse into an alist the output of got tree -i in the current buffer."
+  (goto-char (point-min))
+  (cl-loop
+   until (= (point) (point-max))
+   collect (let* ((obj-start (point))
+                  (_ (forward-word))
+                  (obj (buffer-substring obj-start (point)))
+                  (_ (forward-char))         ;skip the space
+                  (filename-start (point))
+                  (_ (move-end-of-line nil))
+                  (filename (buffer-substring filename-start (point))))
+             ;; goto the start of the next line
+             (forward-line)
+             (move-beginning-of-line nil)
+             `(,filename . ,obj))))
+
+(defun vc-got--tree (commit path)
+  (vc-got-with-worktree path
+    (with-temp-buffer
+      (vc-got--call "tree" "-c" commit "-i" path)
+      (vc-got--tree-parse))))
+
+(defun vc-got--cat (commit obj-id)
+  "Execute got cat -c COMMIT OBJ-ID in the current buffer."
+  (vc-got--call "cat" "-c" commit obj-id))
 
 
 ;; Backend properties
@@ -223,6 +274,30 @@ Return \"0\" for a file added but not yet committed."
 
 (defun vc-got-checkout-model (_files)
   'implicit)
+
+
+;; state-changing functions
+
+(defun vc-got-create-repo (_backend)
+  (error "vc got: create-repo not implemented"))
+
+(defun vc-got-register (files &optional _comment)
+  "Register FILES, passing `vc-register-switches' to the backend command."
+  (vc-got--add files))
+
+(defun vc-got-responsible-p (file)
+  (vc-find-root file ".got"))
+
+(defun vc-got-checkin (files comment &optional _rev)
+  "Commit FILES with COMMENT as commit message."
+  (with-temp-buffer
+    (apply #'vc-got--call "commit" "-m" comment files)))
+
+(defun vc-got-find-revision (file rev buffer)
+  (when-let (obj-id (assoc file (vc-got--tree rev file) #'string=))
+    (with-current-buffer buffer
+      (vc-got-with-worktree file
+        (vc-got--cat rev obj-id)))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
