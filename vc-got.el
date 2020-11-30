@@ -285,8 +285,7 @@ Return \"0\" for a file added but not yet committed."
   "Register FILES, passing `vc-register-switches' to the backend command."
   (vc-got--add files))
 
-(defun vc-got-responsible-p (file)
-  (vc-find-root file ".got"))
+(defalias 'vc-got-responsible-p #'vc-got-root)
 
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
