@@ -248,9 +248,7 @@ DIR-OR-FILE."
 ;;                                      (message "got %s" res))))
 
 (defun vc-got-working-revision (file)
-  "Return the id of the last commit that touched the FILE.
-
-Return \"0\" for a file added but not yet committed."
+  "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
   (or
    (with-temp-buffer
      (when (vc-got--log 1 file)
@@ -294,6 +292,7 @@ Return \"0\" for a file added but not yet committed."
     (apply #'vc-got--call "commit" "-m" comment files)))
 
 (defun vc-got-find-revision (file rev buffer)
+  "Fill BUFFER with the content of FILE in the given revision REV."
   (when-let (obj-id (assoc file (vc-got--tree rev file) #'string=))
     (with-current-buffer buffer
       (vc-got-with-worktree file
