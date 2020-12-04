@@ -200,9 +200,10 @@ DIR-OR-FILE."
   "Return non-nil if FILE is registered with got."
   (if (file-directory-p file)
       nil                               ;got doesn't track directories
-    (let ((status (vc-got--status file)))
-      (not (or (string-prefix-p "?" status)
-               (string-prefix-p "N" status))))))
+    (when (vc-find-root file ".got")
+      (let ((status (vc-got--status file)))
+        (not (or (string-prefix-p "?" status)
+                 (string-prefix-p "N" status)))))))
 
 ;; (vc-got-registered "/usr/ports/mystuff/net/td")
 ;; (vc-got-registered "/usr/ports/mystuff/net/td/Makefile")
