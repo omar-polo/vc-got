@@ -71,6 +71,7 @@
   (require 'subr-x))
 
 (require 'cl-lib)
+(require 'cl-seq)
 (require 'seq)
 (require 'vc)
 
@@ -99,17 +100,27 @@
   (with-temp-buffer
     (apply #'vc-got--call "add" (append vc-register-switches files))))
 
-(defun vc-got--log (limit path)
+(defun vc-got--log (&optional path limit start-commit search-pattern)
   "Execute the log command in the worktree of PATH.
-
-The output of the command will be put in the current-buffer.
+The output in the current buffer.
 
 LIMIT limits the maximum number of commit returned.
 
+START-COMMIT: start traversing history at the specified commit.
+SEARCH-PATTERN: limit to log messages matched by the regexp given.
+
 Return nil if the command failed or if PATH isn't included in any
 worktree."
-  (vc-got-with-worktree path
-    (zerop (vc-got--call "log" "-l" (format "%s" limit) path))))
+  (vc-got-with-worktree (or path default-directory)
+    (zerop
+     (apply #'vc-got--call
+            (cl-remove-if #'null
+                          (flatten-list
+                           (list "log"
+                                 (when limit (list "-l" (format "%s" limit)))
+                                 (when start-commit (list "-c" start-commit))
+                                 (when search-pattern (list "-s" search-pattern))
+                                 path)))))))
 
 (defun vc-got--status (dir-or-file &rest files)
   "Return the output of ``got status''.
@@ -251,7 +262,7 @@ DIR-OR-FILE."
   "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
   (or
    (with-temp-buffer
-     (when (vc-got--log 1 file)
+     (when (vc-got--log file 1)
        (let (start)
          (goto-char (point-min))
          (forward-line 1)               ;skip the ----- line
