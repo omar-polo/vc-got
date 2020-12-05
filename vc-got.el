@@ -49,21 +49,51 @@
 ;;
 ;; STATE-CHANGING FUNCTIONS:
 ;; * create-repo                        NOT IMPLEMENTED
-;;                           I don't think got init does
-;;                           what this function is supposed
-;;                           to do.
+;;      I don't think got init does what this function is supposed to
+;;      do.
 ;; * register                           DONE
 ;; - responsible-p                      DONE
 ;; - receive-file                       NOT IMPLEMENTED
 ;; - unregister                         NOT IMPLEMENTED
-;;                           use remove?
+;;      use remove?
 ;; * checkin                            DONE
 ;; * find-revision                      DONE
+;; * checkout                           NOT IMPLEMENTED
+;;      I'm not sure how to properly implement this.  Does filling
+;;      FILE with the find-revision do the trick?  Or use got update?
+;; * revert                             DONE
+;; - merge-file                         NOT IMPLEMENTED
+;; - merge-branch                       DONE
+;; - merge-news                         NOT IMPLEMENTED
+;; - pull                               DONE
+;; - steal-lock                         NOT IMPLEMENTED
+;; - modify-change-comment              NOT IMPLEMENTED
+;;      can be implemented via histedit, if I understood correctly
+;;      what it is supposed to do.
+;; - mark-resolved                      NOT IMPLEMENTED
+;; - find-admin-dir                     NOT IMPLEMENTED
+;;
+;; HISTORY FUNCTIONS
+;; * print-log                          DONE
+;; * log-outgoing                       NOT IMPLEMENTED
+;; * log-incoming                       NOT IMPLEMENTED
+;; - log-search                         DONE
+;; - log-view-mode                      NOT IMPLEMENTED
 
 ;; TODO: use the idiom
 ;;      (let (process-file-side-effects) ...)
 ;; when the got command WON'T change the file.  This can enable some
 ;; emacs optimizations
+
+;; TODO: vc-git has most function that starts with:
+;;
+;;    (let* ((root (vc-git-root default-directory))
+;;           (buffer (format "*vc-git : %s*" (expand-file-name root)))
+;;           ...)
+;;      ...)
+;;
+;; we should 1) investigate if also other backends do something like
+;; this (or if there is a better way) and 2) try to do the same.
 
 ;;; Code:
 
@@ -187,6 +217,47 @@ DIR-OR-FILE."
   "Execute got cat -c COMMIT OBJ-ID in the current buffer."
   (vc-got--call "cat" "-c" commit obj-id))
 
+(defun vc-got--revert (&rest files)
+  "Execute got revert FILES..."
+  (vc-got-with-worktree (car files)
+    (with-temp-buffer
+      (apply #'vc-got--call "revert" files))))
+
+(defun vc-got--list-branches ()
+  "Return an alist of (branch . commit)."
+  (with-temp-buffer
+    (when (zerop (vc-got--call "branch" "-l"))
+      (goto-char (point-min))
+      (cl-loop
+       until (= (point) (point-max))
+       ;; parse the `* $branchname: $commit', from the end
+       collect (let* ((_ (move-end-of-line nil))
+                      (end-commit (point))
+                      (_ (backward-word))
+                      (start-commit (point))
+                      (_ (backward-char 2))
+                      (end-branchname (point))
+                      (_ (move-beginning-of-line nil))
+                      (_ (forward-char 2))
+                      (start-branchname (point))
+                      (branchname (buffer-substring start-branchname end-branchname))
+                      (commit (buffer-substring start-commit end-commit)))
+                 (forward-line)
+                 (move-beginning-of-line nil)
+                 `(,branchname . ,commit))))))
+
+;; (vc-got-with-worktree "/usr/ports/mystuff/"
+;;   (vc-got--list-branches))
+
+(defun vc-got--integrate (branch)
+  "Integrate BRANCH into the current one."
+  (with-temp-buffer
+    (vc-got--call "integrate" branch)))
+
+(defun vc-got--diff (&rest args)
+  "Call got diff with ARGS.  The result will be stored in the current buffer."
+  (apply #'vc-got--call "diff" args))
+
 
 ;; Backend properties
 
@@ -308,6 +379,67 @@ DIR-OR-FILE."
     (with-current-buffer buffer
       (vc-got-with-worktree file
         (vc-got--cat rev obj-id)))))
+
+(defun vc-got-checkout (_file &optional _rev)
+  "Checkout revision REV of FILE.  If REV is t, checkout from the head."
+  (error "vc got: checkout not implemented"))
+
+(defun vc-got-revert (file &optional _content-done)
+  "Revert FILE back to working revision."
+  (vc-got--revert file))
+
+(defun vc-got-merge-branch ()
+  "Prompt for a branch and integrate it into the current one."
+  ;; XXX: be smart and try to "got rebase" if "got integrate" fails?
+  (let* ((branches (cl-loop for (branch . commit) in (vc-got--list-branches)
+                            collect branch))
+         (branch (completing-read "Merge from branch: " branches)))
+    (when branch
+      (vc-got--integrate branch))))
+
+(defun vc-got-pull (prompt)
+  "Execute got pull, prompting the user for the full command if PROMPT is not nil."
+  (let* ((root (vc-got-root default-directory))
+         (buffer (format "*vc-got : %s*" (expand-file-name root))))
+    (when-let (cmd (if prompt
+                       (split-string
+                        (read-shell-command "Got pull command: " "got pull")
+                        " " t)
+                     '("got" "pull")))
+      (vc-do-command buffer 0 vc-got-cmd nil (cdr cmd)))))
+
+(defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
+  "Insert the revision log for FILES into BUFFER.
+
+LIMIT limits the number of commits, optionally starting at START-REVISION."
+  (with-current-buffer buffer
+    ;; the *vc-diff* may be read only
+    (let ((inhibit-read-only))
+      (cl-loop for file in files
+               do (vc-got--log file limit start-revision)))))
+
+;; XXX: vc.el specify only pattern, but in reality this takes a buffer
+;; and a pattern.
+(defun vc-got-log-search (buffer pattern)
+  "Search commits for PATTERN and write the results found in BUFFER."
+  (with-current-buffer buffer
+    (let ((inhibit-read-only t))
+      (vc-got--log nil nil nil pattern))))
+
+;; TODO: async
+;; TODO: we should append (vc-switches 'got 'diff) to the switches.
+;; This by default is ("-u") and causes an error.
+(defun vc-got-diff (files &optional rev1 rev2 buffer _async)
+  "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
+  (message "vc-got: debug: files is %s" files)
+  (let* ((buffer (get-buffer-create (or buffer "*vc-difff*")))
+         (inhibit-read-only t))
+    (with-current-buffer buffer
+      (vc-got-with-worktree (car files)
+        (cond ((and (null rev1)
+                    (null rev2))
+               (vc-got--diff (car files)))
+              (t (error "Not implemented")))))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
