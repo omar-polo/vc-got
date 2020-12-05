@@ -12,7 +12,7 @@ make sure that `vc-got` is within your `load-path`.  You shouldn't
 require the library.
 
 ```emacs-lisp
-(push 'Got vc-handled-backends)
+(cl-pushnew 'Got vc-handled-backends)
 ```
 
 With `use-package` something like this should be enough:
