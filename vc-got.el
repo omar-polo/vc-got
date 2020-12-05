@@ -45,7 +45,7 @@
 ;; - status-fileinfo-extra              NOT IMPLEMENTED
 ;; * working-revision                   DONE
 ;; * checkout-model                     DONE
-;; - mode-line-string                   NOT IMPLEMENTED
+;; - mode-line-string                   DONE
 ;;
 ;; STATE-CHANGING FUNCTIONS:
 ;; * create-repo                        NOT IMPLEMENTED
@@ -246,8 +246,11 @@ DIR-OR-FILE."
                  (move-beginning-of-line nil)
                  `(,branchname . ,commit))))))
 
-;; (vc-got-with-worktree "/usr/ports/mystuff/"
-;;   (vc-got--list-branches))
+(defun vc-got--current-branch ()
+  "Return the current branch."
+  (with-temp-buffer
+    (when (zerop (vc-got--call "branch"))
+      (string-trim (buffer-string) "" "\n"))))
 
 (defun vc-got--integrate (branch)
   "Integrate BRANCH into the current one."
@@ -355,6 +358,12 @@ DIR-OR-FILE."
 
 (defun vc-got-checkout-model (_files)
   'implicit)
+
+(defun vc-got-mode-line-string (file)
+  "Return the VC mode line string for FILE."
+  (vc-got-with-worktree file
+    (let ((def (vc-default-mode-line-string 'Got file)))
+      (concat (substring def 0 4) (vc-got--current-branch)))))
 
 
 ;; state-changing functions
