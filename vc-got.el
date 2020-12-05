@@ -428,7 +428,8 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
 
 ;; TODO: async
 ;; TODO: we should append (vc-switches 'got 'diff) to the switches.
-;; This by default is ("-u") and causes an error.
+;;       This by default is ("-u") and causes an error.
+;; TODO: return 0 or 1
 (defun vc-got-diff (files &optional rev1 rev2 buffer _async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
   (message "vc-got: debug: files is %s" files)
