@@ -20,5 +20,6 @@ With `use-package` something like this should be enough:
 ```emacs-lisp
 (use-package vc-got
   :load-path "/path/to/vc-got/"
-  :init (push 'Got vc-handled-backends))
+  :init (cl-pushnew 'Got vc-handled-backends)
+  :defer t)
 ```
