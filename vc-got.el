@@ -394,6 +394,11 @@ DIR-OR-FILE."
       (vc-got-with-worktree file
         (vc-got--cat rev obj-id)))))
 
+(defun vc-got-find-ignore-file (file)
+  "Return the gitignore file that controls FILE."
+  (expand-file-name ".gitignore"
+                    (vc-got-root file)))
+
 (defun vc-got-checkout (_file &optional _rev)
   "Checkout revision REV of FILE.  If REV is t, checkout from the head."
   (error "vc got: checkout not implemented"))
