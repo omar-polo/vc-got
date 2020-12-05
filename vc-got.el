@@ -259,7 +259,8 @@ DIR-OR-FILE."
 
 (defun vc-got--diff (&rest args)
   "Call got diff with ARGS.  The result will be stored in the current buffer."
-  (apply #'vc-got--call "diff" args))
+  (apply #'vc-got--call "diff"
+         (mapcar #'file-relative-name args)))
 
 
 ;; Backend properties
@@ -458,7 +459,7 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       (vc-got-with-worktree (car files)
         (cond ((and (null rev1)
                     (null rev2))
-               (vc-got--diff (car files)))
+               (apply #'vc-got--diff files))
               (t (error "Not implemented")))))))
 
 (provide 'vc-got)
