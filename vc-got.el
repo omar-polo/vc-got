@@ -371,7 +371,12 @@ DIR-OR-FILE."
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
-    (apply #'vc-got--call "commit" "-m" comment files)))
+    (apply #'vc-got--call "commit" "-m"
+           ;; emacs add ``Summary:'' at the start of the commit
+           ;; message.  vc-git doesn't seem to treat this specially.
+           ;; Since it's annoying, remove it.
+           (string-remove-prefix "Summary: " comment)
+           files)))
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
