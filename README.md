@@ -15,11 +15,20 @@ require the library.
 (cl-pushnew 'Got vc-handled-backends)
 ```
 
+It's highly recommended to add `".got"` to the list of
+`vc-directory-exclusion-list`.
+
+```emacs-lisp
+(cl-pushnew ".got" vc-directory-exclusion-list)
+```
+
 With `use-package` something like this should be enough:
 
 ```emacs-lisp
 (use-package vc-got
   :load-path "/path/to/vc-got/"
-  :init (cl-pushnew 'Got vc-handled-backends)
-  :defer t)
+  :defer t
+  :init
+  (cl-pushnew 'Got vc-handled-backends)
+  (cl-pushnew ".got" vc-directory-exclusion-list))
 ```
