@@ -414,9 +414,9 @@ DIR-OR-FILE."
 LIMIT limits the number of commits, optionally starting at START-REVISION."
   (with-current-buffer buffer
     ;; the *vc-diff* may be read only
-    (let ((inhibit-read-only))
+    (let ((inhibit-read-only t))
       (cl-loop for file in files
-               do (vc-got--log file limit start-revision)))))
+               do (vc-got--log (file-relative-name file) limit start-revision)))))
 
 ;; XXX: vc.el specify only pattern, but in reality this takes a buffer
 ;; and a pattern.
