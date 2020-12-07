@@ -75,7 +75,7 @@
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
-;; * log-outgoing                       NOT IMPLEMENTED
+;; * log-outgoing                       DONE
 ;; * log-incoming                       NOT IMPLEMENTED
 ;; - log-search                         DONE
 ;; - log-view-mode                      NOT IMPLEMENTED
@@ -130,13 +130,14 @@
   (with-temp-buffer
     (apply #'vc-got--call "add" (append vc-register-switches files))))
 
-(defun vc-got--log (&optional path limit start-commit search-pattern)
+(defun vc-got--log (&optional path limit start-commit stop-commit search-pattern)
   "Execute the log command in the worktree of PATH.
 The output in the current buffer.
 
 LIMIT limits the maximum number of commit returned.
 
 START-COMMIT: start traversing history at the specified commit.
+STOP-COMMIT: stop traversing history at the specified commit.
 SEARCH-PATTERN: limit to log messages matched by the regexp given.
 
 Return nil if the command failed or if PATH isn't included in any
@@ -149,6 +150,7 @@ worktree."
                            (list "log"
                                  (when limit (list "-l" (format "%s" limit)))
                                  (when start-commit (list "-c" start-commit))
+                                 (when stop-commit (list "-x" stop-commit))
                                  (when search-pattern (list "-s" search-pattern))
                                  path)))))))
 
@@ -443,13 +445,24 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       (cl-loop for file in files
                do (vc-got--log (file-relative-name file) limit start-revision)))))
 
+;; XXX: this includes also the latest commit in REMOTE-LOCATION.
+(defun vc-got-log-outgoing (buffer remote-location)
+  "Fill BUFFER with the diff between the local worktree branch and REMOTE-LOCATION."
+  (vc-setup-buffer buffer)
+  (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
+                (concat "origin/" (vc-got--current-branch))
+              remote-location))
+        (inhibit-read-only t))
+    (with-current-buffer buffer
+      (vc-got--log nil nil nil rl))))
+
 ;; XXX: vc.el specify only pattern, but in reality this takes a buffer
 ;; and a pattern.
 (defun vc-got-log-search (buffer pattern)
   "Search commits for PATTERN and write the results found in BUFFER."
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
-      (vc-got--log nil nil nil pattern))))
+      (vc-got--log nil nil nil nil pattern))))
 
 ;; TODO: async
 ;; TODO: we should append (vc-switches 'got 'diff) to the switches.
