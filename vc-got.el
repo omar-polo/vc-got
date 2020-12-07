@@ -66,6 +66,8 @@
 ;; - merge-branch                       DONE
 ;; - merge-news                         NOT IMPLEMENTED
 ;; - pull                               DONE
+;; - push                               DONE
+;;      uses git
 ;; - steal-lock                         NOT IMPLEMENTED
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
@@ -120,6 +122,14 @@
   (declare (indent defun))
   `(when-let (default-directory (vc-got-root ,file))
      ,@body))
+
+(defun vc-got--repo-root ()
+  "Return the path to the repository root.
+Assume `default-directory' is inside a got worktree."
+  (vc-got-with-worktree default-directory
+    (with-temp-buffer
+      (insert-file-contents ".got/repository")
+      (string-trim (buffer-string) nil "\n"))))
 
 (defun vc-got--call (&rest args)
   "Call `vc-got-cmd' in the `default-directory' with ARGS and put the output in the current buffer."
@@ -424,16 +434,28 @@ DIR-OR-FILE."
     (when branch
       (vc-got--integrate branch))))
 
-(defun vc-got-pull (prompt)
-  "Execute got pull, prompting the user for the full command if PROMPT is not nil."
-  (let* ((root (vc-got-root default-directory))
-         (buffer (format "*vc-got : %s*" (expand-file-name root))))
+(defun vc-got--push-pull (cmd op prompt root)
+  "Execute CMD OP, or prompt the user if PROMPT is non-nil.
+ROOT is the worktree root."
+  (let ((buffer (format "*vc-got : %s*" (expand-file-name root))))
     (when-let (cmd (if prompt
                        (split-string
-                        (read-shell-command "Got pull command: " "got fetch")
+                        (read-shell-command (format "%s %s command: " cmd op)
+                                            (format "%s %s" cmd op))
                         " " t)
-                     '("got" "fetch")))
-      (apply #'vc-do-command buffer 0 vc-got-cmd nil (cdr cmd)))))
+                     (list cmd op)))
+      (apply #'vc-do-command buffer 0 (car cmd) nil (cdr cmd)))))
+
+(defun vc-got-pull (prompt)
+  "Execute got pull, prompting the user for the full command if PROMPT is not nil."
+  (vc-got--push-pull vc-got-cmd "fetch" prompt (vc-got-root default-directory)))
+
+(defun vc-got-push (prompt)
+  "Run git push (not got!) in the repository dir.
+If PROMPT is non-nil, prompt for the git command to run."
+  (let* ((root (vc-got-root default-directory))
+         (default-directory (vc-got--repo-root)))
+    (vc-got--push-pull "git" "push" prompt root)))
 
 (defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
   "Insert the revision log for FILES into BUFFER.
