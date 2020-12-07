@@ -458,7 +458,7 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
 (defun vc-got-diff (files &optional rev1 rev2 buffer _async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
   (message "vc-got: debug: files is %s" files)
-  (let* ((buffer (get-buffer-create (or buffer "*vc-difff*")))
+  (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
     (with-current-buffer buffer
       (vc-got-with-worktree (car files)
