@@ -40,7 +40,7 @@
 ;; * registered                         DONE
 ;; * state                              DONE
 ;; - dir-status-files                   DONE
-;; - dir-extra-headers                  NOT IMPLEMENTED
+;; - dir-extra-headers                  DONE
 ;; - dir-printer                        NOT IMPLEMENTED
 ;; - status-fileinfo-extra              NOT IMPLEMENTED
 ;; * working-revision                   DONE
@@ -332,6 +332,11 @@ DIR-OR-FILE."
 ;; (let ((dir "/usr/ports/mystuff"))
 ;;   (vc-got-dir-status-files dir nil (lambda (res _t)
 ;;                                      (message "got %s" res))))
+
+(defun vc-got-dir-extra-headers (_dir)
+  (concat
+   (propertize "Branch     : " 'face 'font-lock-type-face)
+   (vc-got--current-branch)))
 
 (defun vc-got-working-revision (file)
   "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
