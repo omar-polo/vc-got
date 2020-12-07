@@ -428,10 +428,10 @@ DIR-OR-FILE."
          (buffer (format "*vc-got : %s*" (expand-file-name root))))
     (when-let (cmd (if prompt
                        (split-string
-                        (read-shell-command "Got pull command: " "got pull")
+                        (read-shell-command "Got pull command: " "got fetch")
                         " " t)
-                     '("got" "pull")))
-      (vc-do-command buffer 0 vc-got-cmd nil (cdr cmd)))))
+                     '("got" "fetch")))
+      (apply #'vc-do-command buffer 0 vc-got-cmd nil (cdr cmd)))))
 
 (defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
   "Insert the revision log for FILES into BUFFER.
