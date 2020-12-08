@@ -107,6 +107,8 @@
 (require 'seq)
 (require 'vc)
 
+(require 'vc-got-stage)
+
 (defvar vc-got-cmd "got"
   "The got command.")
 
@@ -496,6 +498,11 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
   (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
     (with-current-buffer buffer
+      (vc-got-stage-mode +1)
+      ;; TODO: this shouldn't be done in an unconditioned fashion.  If
+      ;; we're diffing two revision, we can't stage hunks; we can
+      ;; stage only when diffing the local modifications.
+      (setq vc-got-stage-fileset files)
       (vc-got-with-worktree (car files)
         (cond ((and (null rev1)
                     (null rev2))
