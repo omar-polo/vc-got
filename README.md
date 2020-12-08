@@ -46,12 +46,14 @@ VC doesn't support this.  This is the motivation behind
 
 The following keys are enabled by `vc-got-stage-mode`:
 
+| key                | description                                    |
+|--------------------|------------------------------------------------|
 | <kbd>C-c g A</kbd> | Applies (i.e. stage in got) the marked changes |
-| <kbd>C-c g b</kbd> | Go to beginning of change |
-| <kbd>C-c g e</kbd> | Go to end of change |
-| <kbd>C-c g n</kbd> | Go to next change |
-| <kbd>C-c g p</kbd> | Go to previous change |
-| <kbd>C-c g t</kbd> | Toggle mark |
+| <kbd>C-c g b</kbd> | Go to beginning of change                      |
+| <kbd>C-c g e</kbd> | Go to end of change                            |
+| <kbd>C-c g n</kbd> | Go to next change                              |
+| <kbd>C-c g p</kbd> | Go to previous change                          |
+| <kbd>C-c g t</kbd> | Toggle mark                                    |
 
 A change is a set of sequential line added/removed by the diff, it is
 a smaller unit than a *hunk*.
