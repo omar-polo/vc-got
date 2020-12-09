@@ -26,6 +26,7 @@ Higher values means higher priority.  DON'T use negative numbers.")
 (defvar vc-got-stage-prefix-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "A") #'vc-got-stage-apply)
+    (define-key map (kbd "U") #'vc-got-unstage-all)
     (define-key map (kbd "b") #'vc-got-stage-beginning-of-change)
     (define-key map (kbd "e") #'vc-got-stage-end-of-change)
     (define-key map (kbd "n") #'vc-got-stage-next-change)
@@ -90,14 +91,22 @@ Higher values means higher priority.  DON'T use negative numbers.")
           (with-current-buffer buf
             (insert "n\n")))))))
 
+(defun vc-got-stage-unstage-all ()
+  (interactive)
+  (let* ((default-directory (vc-find-root default-directory ".got"))
+         (unstage-buf       (get-buffer-create "*vc-got-unstage*")))
+    (unless (zerop (apply #'process-file "got" nil unstage-buf nil
+                          "unstage" (mapcar #'file-relative-name
+                                            vc-got-stage-fileset)))
+      (pop-to-buffer unstage-buf)
+      (error "Got unstage failed"))
+    (kill-buffer unstage-buf)))
+
 (defun vc-got-stage--apply-impl (script tmp-file)
   "Apply the stages using SCRIPT as script (TMP-FILE is the path)."
   (let* ((default-directory (vc-find-root default-directory ".got"))
          (stage-buf         (get-buffer-create "*vc-got-stage*")))
-    (unless (zerop (apply #'process-file "got" nil stage-buf nil "unstage"
-                          (mapcar #'file-relative-name vc-got-stage-fileset)))
-      (pop-to-buffer stage-buf)
-      (error "Got unstage failed"))
+    (vc-got-stage-unstage-all)
     (vc-got-stage--compute-y-or-n script)
     (with-current-buffer script
       (save-buffer))
@@ -105,7 +114,8 @@ Higher values means higher priority.  DON'T use negative numbers.")
                           "-F" tmp-file (mapcar #'file-relative-name
                                                 vc-got-stage-fileset)))
       (pop-to-buffer stage-buf)
-      (error "Got stage failed"))))
+      (error "Got stage failed"))
+    (kill-buffer stage-buf)))
 
 (defun vc-got-stage-apply ()
   "Apply the stages.
