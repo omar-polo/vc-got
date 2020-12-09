@@ -93,7 +93,7 @@ Higher values means higher priority.  DON'T use negative numbers.")
 (defun vc-got-stage--apply-impl (script tmp-file)
   "Apply the stages using SCRIPT as script (TMP-FILE is the path)."
   (interactive "P")
-  (let* ((default-directory (vc-got-root default-directory))
+  (let* ((default-directory (vc-find-root default-directory ".got"))
          (stage-buf         (get-buffer-create "*vc-got-stage*")))
     (unless (zerop (apply #'process-file "got" nil stage-buf nil "unstage"
                           (mapcar #'file-relative-name vc-got-stage-fileset)))
