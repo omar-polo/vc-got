@@ -112,6 +112,14 @@
 (defvar vc-got-cmd "got"
   "The got command.")
 
+(defcustom vc-got-diff-switches t
+  "String or list of strings specifying switches for Got diff under VC.
+If nil, use the value of `vc-diff-switches'.  If t, use no switches."
+  :type '(choice (const :tag "Unspecified" nil)
+                 (const :tag "None" t)
+                 (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
 ;; helpers
 
 (defun vc-got-root (file)
@@ -274,7 +282,8 @@ DIR-OR-FILE."
 (defun vc-got--diff (&rest args)
   "Call got diff with ARGS.  The result will be stored in the current buffer."
   (apply #'vc-got--call "diff"
-         (mapcar #'file-relative-name args)))
+         (append (vc-switches 'got 'diff)
+                 (mapcar #'file-relative-name args))))
 
 
 ;; Backend properties
@@ -489,8 +498,6 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       (vc-got--log nil nil nil nil pattern))))
 
 ;; TODO: async
-;; TODO: we should append (vc-switches 'got 'diff) to the switches.
-;;       This by default is ("-u") and causes an error.
 ;; TODO: return 0 or 1
 (defun vc-got-diff (files &optional rev1 rev2 buffer _async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
