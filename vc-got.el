@@ -501,8 +501,6 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
     (with-current-buffer buffer
       (vc-got--log nil nil (vc-got--current-branch) rl))))
 
-;; XXX: vc.el specify only pattern, but in reality this takes a buffer
-;; and a pattern.
 (defun vc-got-log-search (buffer pattern)
   "Search commits for PATTERN and write the results found in BUFFER."
   (with-current-buffer buffer
