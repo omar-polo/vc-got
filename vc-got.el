@@ -78,9 +78,12 @@
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
 ;; * log-outgoing                       DONE
-;; * log-incoming                       NOT IMPLEMENTED
+;; * log-incoming                       DONE
 ;; - log-search                         DONE
 ;; - log-view-mode                      NOT IMPLEMENTED
+;; - show-log-entry                     NOT IMPLEMENTED
+;; - comment-history                    NOT IMPLEMENTED
+;; - update-changelog                   NOT IMPLEMENTED
 
 ;; TODO: use the idiom
 ;;      (let (process-file-side-effects) ...)
@@ -488,6 +491,15 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
         (inhibit-read-only t))
     (with-current-buffer buffer
       (vc-got--log nil nil nil rl))))
+
+(defun vc-got-incoming (buffer remote-location)
+  "Fill BUFFER with the diff between the REMOTE-LOCATION and the local worktree branch."
+  (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
+                (concat "origin/" (vc-got--current-branch))
+              remote-location))
+        (inhibit-read-only t))
+    (with-current-buffer buffer
+      (vc-got--log nil nil (vc-got--current-branch) rl))))
 
 ;; XXX: vc.el specify only pattern, but in reality this takes a buffer
 ;; and a pattern.
