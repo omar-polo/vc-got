@@ -517,7 +517,8 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       (vc-got-with-worktree (car files)
         (cond ((and (null rev1)
                     (null rev2))
-               (apply #'vc-got--diff files))
+               (dolist (file files)
+                 (vc-got--diff file)))
               (t (error "Not implemented")))))))
 
 (provide 'vc-got)
