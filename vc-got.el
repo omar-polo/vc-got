@@ -118,6 +118,12 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
                  (repeat :tag "Argument List" :value ("") string)))
 
 ;; helpers
+(defun vc-got--program-version ()
+  "Returns the version string of used `Got' command."
+  (let (process-file-side-effects)
+    (with-temp-buffer
+      (vc-got--call "-V")
+      (substring (buffer-string) 4 -1))))
 
 (defun vc-got-root (file)
   "Return the work tree root for FILE, or nil."
