@@ -78,6 +78,36 @@
 ;; - show-log-entry                     NOT IMPLEMENTED
 ;; - comment-history                    NOT IMPLEMENTED
 ;; - update-changelog                   NOT IMPLEMENTED
+;; * diff                               DONE
+;; - revision-completion-table          NOT IMPLEMENTED
+;; - annotate-command                   NOT IMPLEMENTED
+;; - annotate-time                      NOT IMPLEMENTED
+;; - annotate-current-time              NOT IMPLEMENTED
+;; - annotate-extract-revision-at-line  NOT IMPLEMENTED
+;; - region-history                     NOT IMPLEMENTED
+;; - region-history-mode                NOT IMPLEMENTED
+;; - mergebase                          NOT IMPLEMENTED
+;;
+;; TAG SYSTEM
+;; - create-tag                         NOT IMPLEMENTED
+;; - retrieve-tag                       NOT IMPLEMENTED
+;;
+;; MISCELLANEOUS                        NOT IMPLEMENTED
+;; - make-version-backups-p             NOT IMPLEMENTED
+;; - root                               DONE
+;; - ignore                             NOT IMPLEMENTED
+;; - ignore-completion-table            NOT IMPLEMENTED
+;; - previous-revision                  NOT IMPLEMENTED
+;; - next-revision                      NOT IMPLEMENTED
+;; - log-edit-mode                      NOT IMPLEMENTED
+;; - check-headers                      NOT IMPLEMENTED
+;; - delete-file                        NOT IMPLEMENTED
+;; - rename-file                        NOT IMPLEMENTED
+;; - find-file-hook                     NOT IMPLEMENTED
+;; - extra-menu                         NOT IMPLEMENTED
+;; - extra-dir-menu                     NOT IMPLEMENTED
+;; - conflicted-files                   NOT IMPLEMENTED
+;; - repository-url                     NOT IMPLEMENTED
 
 ;; TODO: use the idiom
 ;;      (let (process-file-side-effects) ...)
