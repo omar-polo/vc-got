@@ -136,8 +136,14 @@
 
 (require 'vc-got-stage)
 
-(defvar vc-got-cmd "got"
-  "The got command.")
+(defgroup vc-got nil
+  "VC GoT backend."
+  :group 'vc)
+
+(defcustom vc-got-program "got"
+  "Name of the Got executable (excluding any arguments)."
+  :type 'string
+  :group 'vc-got)
 
 (defcustom vc-got-diff-switches t
   "String or list of strings specifying switches for Got diff under VC.
@@ -145,7 +151,8 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
   :type '(choice (const :tag "Unspecified" nil)
                  (const :tag "None" t)
                  (string :tag "Argument String")
-                 (repeat :tag "Argument List" :value ("") string)))
+                 (repeat :tag "Argument List" :value ("") string))
+  :group 'vc-got)
 
 ;; helpers
 
@@ -169,8 +176,8 @@ Assume `default-directory' is inside a got worktree."
       (string-trim (buffer-string) nil "\n"))))
 
 (defun vc-got--call (&rest args)
-  "Call `vc-got-cmd' in the `default-directory' with ARGS and put the output in the current buffer."
-  (apply #'process-file vc-got-cmd nil (current-buffer) nil args))
+  "Call `vc-got-program' in the `default-directory' with ARGS and put the output in the current buffer."
+  (apply #'process-file vc-got-program nil (current-buffer) nil args))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
@@ -486,7 +493,7 @@ ROOT is the worktree root."
 
 (defun vc-got-pull (prompt)
   "Execute got pull, prompting the user for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-cmd "fetch" prompt (vc-got-root default-directory)))
+  (vc-got--push-pull vc-got-program "fetch" prompt (vc-got-root default-directory)))
 
 (defun vc-got-push (prompt)
   "Run git push (not got!) in the repository dir.
