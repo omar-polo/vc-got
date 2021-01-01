@@ -80,10 +80,10 @@
 ;; - update-changelog                   NOT IMPLEMENTED
 ;; * diff                               DONE
 ;; - revision-completion-table          NOT IMPLEMENTED
-;; - annotate-command                   NOT IMPLEMENTED
-;; - annotate-time                      NOT IMPLEMENTED
+;; - annotate-command                   DONE
+;; - annotate-time                      DONE
 ;; - annotate-current-time              NOT IMPLEMENTED
-;; - annotate-extract-revision-at-line  NOT IMPLEMENTED
+;; - annotate-extract-revision-at-line  DONE
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
 ;; - mergebase                          NOT IMPLEMENTED
@@ -567,6 +567,35 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
                (dolist (file files)
                  (vc-got--diff file)))
               (t (error "Not implemented")))))))
+
+(defun vc-got-annotate-command (file buf &optional rev)
+  "Show annotated contents of FILE in buffer BUF. If given, use revision REV."
+  (let (process-file-side-effects)
+    (save-current-buffer
+      (set-buffer buf)
+      (apply #'vc-got--call "blame" (if rev
+                                        (list "-c" rev file)
+                                      (list file))))))
+
+(defun vc-got-annotate-time ()
+  "Return the time of the next line of annotation at or after point.
+Value is returned as floating point fractional number of days."
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at  "^[0-9]\\{1,\\}) \\([a-z0-9]+\\) \\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) .+")
+      (let ((str (match-string-no-properties 2)))
+        (vc-annotate-convert-time
+         (encode-time 0 0 0
+                      (string-to-number (substring str 8 10))
+                      (string-to-number (substring str 5 7))
+                      (string-to-number (substring str 0 4))))))))
+
+(defun vc-got-annotate-extract-revision-at-line ()
+  "Returns revision corresponding to the current line or nil."
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at  "^[0-9]\\{1,\\}) \\([a-z0-9]+\\) \\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) .+")
+      (match-string-no-properties 1))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
