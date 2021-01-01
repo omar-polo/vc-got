@@ -576,13 +576,19 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       (apply #'vc-got--call "blame" (if rev
                                         (list "-c" rev file)
                                       (list file))))))
+;; captures 1=REV, 2=DATE, 3=USER
+(defconst vc-got-annotate-re
+  (concat "^[0-9]\\{1,\\}) " ; line number followed by )
+          "\\([a-z0-9]+\\) " ; SHA-1 of commit
+          "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) "
+          "\\([^ ]\\)+ ")) ; year-mm-dd
 
 (defun vc-got-annotate-time ()
   "Return the time of the next line of annotation at or after point.
 Value is returned as floating point fractional number of days."
   (save-excursion
     (beginning-of-line)
-    (when (looking-at  "^[0-9]\\{1,\\}) \\([a-z0-9]+\\) \\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) .+")
+    (when (looking-at vc-got-annotate-re)
       (let ((str (match-string-no-properties 2)))
         (vc-annotate-convert-time
          (encode-time 0 0 0
@@ -594,7 +600,7 @@ Value is returned as floating point fractional number of days."
   "Returns revision corresponding to the current line or nil."
   (save-excursion
     (beginning-of-line)
-    (when (looking-at  "^[0-9]\\{1,\\}) \\([a-z0-9]+\\) \\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) .+")
+    (when (looking-at vc-got-annotate-re)
       (match-string-no-properties 1))))
 
 (defun vc-got-previous-revision (file rev)
