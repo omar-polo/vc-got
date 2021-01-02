@@ -605,31 +605,27 @@ Value is returned as floating point fractional number of days."
 
 (defun vc-got-previous-revision (file rev)
   "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
-  (let (process-file-side-effects)
-    (vc-got-with-worktree file
-      (with-temp-buffer
-        (when (zerop (apply #'vc-got--call "log" (list "-c" rev "-l" "2" "-R" file)))
-          (keep-lines "^commit")
-          (when (looking-at "^commit \\([a-z0-9]+\\)")
-            (match-string-no-properties 1)))))))
+  (with-temp-buffer
+    (vc-got--log file 2 rev nil nil t)
+    (keep-lines "^commit")
+    (when (looking-at "^commit \\([a-z0-9]+\\)")
+      (match-string-no-properties 1))))
 
 (defun vc-got-next-revision (file rev)
   "Return the revision number that follows REV for FILE, or nil
   if no such revision exists."
-  (let (process-file-side-effects)
-    (vc-got-with-worktree file
-      (with-temp-buffer
-        (when (zerop (apply #'vc-got--call "log" (list "-x" rev file)))
-          (keep-lines "^commit")
-          (goto-char (point-max))
-          (beginning-of-line)
-          (previous-line) ;; return from empty line to last actual commit
-          (when (looking-at  "^commit \\([a-z0-9]+\\)$")
-            ;; no need to continue if looking at top commit
-            (unless (string= rev (match-string-no-properties 1))
-              (previous-line)
-              (when (looking-at  "^commit \\([a-z0-9]+\\)")
-                (match-string-no-properties 1)))))))))
+  (with-temp-buffer
+    (vc-got--log file nil nil rev)
+    (keep-lines "^commit")
+    (goto-char (point-max))
+    (beginning-of-line)
+    (previous-line) ;; return from empty line to last actual commit
+    (when (looking-at  "^commit \\([a-z0-9]+\\)$")
+      ;; no need to continue if looking at top commit
+      (unless (string= rev (match-string-no-properties 1))
+        (previous-line)
+        (when (looking-at  "^commit \\([a-z0-9]+\\)")
+          (match-string-no-properties 1))))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
