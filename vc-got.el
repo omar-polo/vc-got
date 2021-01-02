@@ -571,11 +571,11 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
 (defun vc-got-annotate-command (file buf &optional rev)
   "Show annotated contents of FILE in buffer BUF. If given, use revision REV."
   (let (process-file-side-effects)
-    (save-current-buffer
-      (set-buffer buf)
+    (with-current-buffer buf
       (apply #'vc-got--call "blame" (if rev
                                         (list "-c" rev file)
                                       (list file))))))
+
 ;; captures 1=REV, 2=DATE, 3=USER
 (defconst vc-got-annotate-re
   (concat "^[0-9]\\{1,\\}) " ; line number followed by )
