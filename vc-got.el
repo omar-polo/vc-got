@@ -617,14 +617,13 @@ Value is returned as floating point fractional number of days."
   if no such revision exists."
   (with-temp-buffer
     (vc-got--log file nil nil rev)
-    (keep-lines "^commit")
+    (keep-lines "^commit" (point-min) (point-max))
     (goto-char (point-max))
-    (beginning-of-line)
-    (previous-line) ;; return from empty line to last actual commit
-    (when (looking-at  "^commit \\([a-z0-9]+\\)$")
+    (forward-line -1) ;; return from empty line to last actual commit
+    (when (looking-at  "^commit \\([a-z0-9]+\\)")
       ;; no need to continue if looking at top commit
       (unless (string= rev (match-string-no-properties 1))
-        (previous-line)
+        (forward-line -1)
         (when (looking-at  "^commit \\([a-z0-9]+\\)")
           (match-string-no-properties 1))))))
 
