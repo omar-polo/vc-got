@@ -133,6 +133,7 @@
 (require 'cl-seq)
 (require 'seq)
 (require 'vc)
+(require 'vc-annotate)
 
 (require 'vc-got-stage)
 
