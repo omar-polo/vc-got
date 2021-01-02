@@ -573,6 +573,10 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
   "Show annotated contents of FILE in buffer BUF. If given, use revision REV."
   (let (process-file-side-effects)
     (with-current-buffer buf
+      ;; FIXME: vc-ensure-vc-buffer won't recognise this buffer as managed
+      ;; by got unless vc-parent-buffer points to a buffer managed by got.
+      ;; investigate why this is needed.
+      (set (make-local-variable 'vc-parent-buffer) (find-file-noselect file))
       (apply #'vc-got--call "blame" (if rev
                                         (list "-c" rev file)
                                       (list file))))))
