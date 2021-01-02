@@ -362,21 +362,31 @@ DIR-OR-FILE."
     (vc-got--parse-status-flag (vc-got--status file))))
 
 (defun vc-got-dir-status-files (dir files update-function)
-  (let ((fs (seq-filter (lambda (file)
-                          (and (not (string= file ".."))
-                               (not (string= file "."))
-                               (not (string= file ".got"))))
-                        (or files
-                            (directory-files dir)))))
-    (cl-loop with result = (mapcar (lambda (x)
-                                     (list (car x) (cdr x) nil))
-                                   (vc-got--parse-status
-                                    (apply #'vc-got--status dir files)))
-             for file in fs
-             do (unless (cadr (assoc file result #'string=))
-                  (cl-pushnew (list file 'up-to-date nil)
-                              result))
-             finally (funcall update-function result nil))))
+  (let* ((fs (seq-filter (lambda (file)
+                           (and (not (string= file ".."))
+                                (not (string= file "."))
+                                (not (string= file ".got"))))
+                         (or files
+                             (directory-files dir))))
+         (stats (vc-got--parse-status (apply #'vc-got--status dir files)))
+         (res))
+    ;; collect deleted and removed files
+    (cl-loop for (file . st) in stats
+             do (when (or (eq st 'missing)
+                          (eq st 'removed))
+                  (push (list file st nil) res)))
+    (cl-loop for file in fs
+             do (let ((s (if (file-directory-p file)
+                             (list file 'unregistered nil)
+                           (if-let (status (cdr (assoc file stats #'string=)))
+                               (list file status nil)
+                             ;; if file doesn't exists, it's a
+                             ;; untracked file that was removed.
+                             (when (file-exists-p file)
+                               (list file 'up-to-date nil))))))
+                  (when s
+                    (push s res)))
+             finally (funcall update-function res nil))))
 
 (defun vc-got-dir-extra-headers (_dir)
   (concat
