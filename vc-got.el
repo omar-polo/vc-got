@@ -134,8 +134,6 @@
 (require 'seq)
 (require 'vc)
 
-(require 'vc-got-stage)
-
 (defgroup vc-got nil
   "VC GoT backend."
   :group 'vc)
@@ -552,15 +550,9 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
 ;; TODO: return 0 or 1
 (defun vc-got-diff (files &optional rev1 rev2 buffer _async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
-  (message "vc-got: debug: files is %s" files)
   (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
     (with-current-buffer buffer
-      (vc-got-stage-mode +1)
-      ;; TODO: this shouldn't be done in an unconditioned fashion.  If
-      ;; we're diffing two revision, we can't stage hunks; we can
-      ;; stage only when diffing the local modifications.
-      (setq vc-got-stage-fileset files)
       (vc-got-with-worktree (car files)
         (cond ((and (null rev1)
                     (null rev2))
