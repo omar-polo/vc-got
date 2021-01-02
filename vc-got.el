@@ -356,20 +356,10 @@ DIR-OR-FILE."
         (not (or (string-prefix-p "?" status)
                  (string-prefix-p "N" status)))))))
 
-;; (vc-got-registered "/usr/ports/mystuff/net/td")
-;; (vc-got-registered "/usr/ports/mystuff/net/td/Makefile")
-;; (vc-got-registered "/usr/ports/mystuff/tmp")
-;; (vc-got-registered "/usr/ports/mystuff/no-existant")
-
 (defun vc-got-state (file)
   "Return the current version control state of FILE.  See `vc-state'."
   (unless (file-directory-p file)
     (vc-got--parse-status-flag (vc-got--status file))))
-
-;; (vc-got-state "/usr/ports/mystuff/net/td")
-;; (vc-got-state "/usr/ports/mystuff/net/td/Makefile")
-;; (vc-got-state "/usr/ports/mystuff/tmp")
-;; (vc-got-state "/usr/ports/mystuff/non-existant")
 
 (defun vc-got-dir-status-files (dir files update-function)
   (let ((fs (seq-filter (lambda (file)
@@ -387,10 +377,6 @@ DIR-OR-FILE."
                   (cl-pushnew (list file 'up-to-date nil)
                               result))
              finally (funcall update-function result nil))))
-
-;; (let ((dir "/usr/ports/mystuff"))
-;;   (vc-got-dir-status-files dir nil (lambda (res _t)
-;;                                      (message "got %s" res))))
 
 (defun vc-got-dir-extra-headers (_dir)
   (concat
@@ -415,11 +401,6 @@ DIR-OR-FILE."
    ;; return "0".
    (when (eq (vc-got-state file) 'added)
      "0")))
-
-;; (vc-got-working-revision "/usr/ports/mystuff/non-existant")
-;; (vc-got-working-revision "/usr/ports/mystuff/CVS")
-;; (vc-got-working-revision "/usr/ports/mystuff/tmp")
-;; (vc-got-working-revision "/usr/ports/mystuff/net/td/Makefile")
 
 (defun vc-got-checkout-model (_files)
   'implicit)
