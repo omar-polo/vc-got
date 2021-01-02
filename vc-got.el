@@ -372,27 +372,21 @@ DIR-OR-FILE."
 ;; (vc-got-state "/usr/ports/mystuff/non-existant")
 
 (defun vc-got-dir-status-files (dir files update-function)
-  (let* ((files (seq-filter (lambda (file)
-                              (and (not (string= file ".."))
-                                   (not (string= file "."))
-                                   (not (string= file ".got"))))
-                            (or files
-                                (directory-files dir))))
-         (statuses (vc-got--parse-status
-                    (apply #'vc-got--status dir files)))
-         (default-directory dir))
-    (cl-loop
-     with result = nil
-     for file in files
-     do (setq result
-              (cons
-               (if (file-directory-p file)
-                   (list file 'unregistered nil)
-                 (if-let (status (cdr (assoc file statuses #'string=)))
-                     (list file status nil)
-                   (list file 'up-to-date nil)))
-               result))
-     finally (funcall update-function result nil))))
+  (let ((fs (seq-filter (lambda (file)
+                          (and (not (string= file ".."))
+                               (not (string= file "."))
+                               (not (string= file ".got"))))
+                        (or files
+                            (directory-files dir)))))
+    (cl-loop with result = (mapcar (lambda (x)
+                                     (list (car x) (cdr x) nil))
+                                   (vc-got--parse-status
+                                    (apply #'vc-got--status dir files)))
+             for file in fs
+             do (unless (cadr (assoc file result #'string=))
+                  (cl-pushnew (list file 'up-to-date nil)
+                              result))
+             finally (funcall update-function result nil))))
 
 ;; (let ((dir "/usr/ports/mystuff"))
 ;;   (vc-got-dir-status-files dir nil (lambda (res _t)
