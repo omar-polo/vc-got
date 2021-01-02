@@ -190,7 +190,8 @@ Assume `default-directory' is inside a got worktree."
   (with-temp-buffer
     (apply #'vc-got--call "add" (append vc-register-switches files))))
 
-(defun vc-got--log (&optional path limit start-commit stop-commit search-pattern)
+(defun vc-got--log (&optional path limit start-commit stop-commit
+                              search-pattern reverse)
   "Execute the log command in the worktree of PATH.
 The output in the current buffer.
 
@@ -199,20 +200,23 @@ LIMIT limits the maximum number of commit returned.
 START-COMMIT: start traversing history at the specified commit.
 STOP-COMMIT: stop traversing history at the specified commit.
 SEARCH-PATTERN: limit to log messages matched by the regexp given.
+REVERSE: display the log messages in reverse order.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
-  (vc-got-with-worktree (or path default-directory)
-    (zerop
-     (apply #'vc-got--call
-            (cl-remove-if #'null
-                          (flatten-list
-                           (list "log"
-                                 (when limit (list "-l" (format "%s" limit)))
-                                 (when start-commit (list "-c" start-commit))
-                                 (when stop-commit (list "-x" stop-commit))
-                                 (when search-pattern (list "-s" search-pattern))
-                                 path)))))))
+  (let (process-file-side-effects)
+    (vc-got-with-worktree (or path default-directory)
+      (zerop
+       (apply #'vc-got--call
+              (cl-remove-if #'null
+                            (flatten-list
+                             (list "log"
+                                   (when limit (list "-l" (format "%s" limit)))
+                                   (when start-commit (list "-c" start-commit))
+                                   (when stop-commit (list "-x" stop-commit))
+                                   (when search-pattern (list "-s" search-pattern))
+                                   (when reverse '("-R"))
+                                   path))))))))
 
 (defun vc-got--status (dir-or-file &rest files)
   "Return the output of ``got status''.
