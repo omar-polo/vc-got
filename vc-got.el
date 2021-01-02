@@ -80,10 +80,10 @@
 ;; - update-changelog                   NOT IMPLEMENTED
 ;; * diff                               DONE
 ;; - revision-completion-table          NOT IMPLEMENTED
-;; - annotate-command                   NOT IMPLEMENTED
-;; - annotate-time                      NOT IMPLEMENTED
+;; - annotate-command                   DONE
+;; - annotate-time                      DONE
 ;; - annotate-current-time              NOT IMPLEMENTED
-;; - annotate-extract-revision-at-line  NOT IMPLEMENTED
+;; - annotate-extract-revision-at-line  DONE
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
 ;; - mergebase                          NOT IMPLEMENTED
@@ -97,8 +97,8 @@
 ;; - root                               DONE
 ;; - ignore                             NOT IMPLEMENTED
 ;; - ignore-completion-table            NOT IMPLEMENTED
-;; - previous-revision                  NOT IMPLEMENTED
-;; - next-revision                      NOT IMPLEMENTED
+;; - previous-revision                  DONE
+;; - next-revision                      DONE
 ;; - log-edit-mode                      NOT IMPLEMENTED
 ;; - check-headers                      NOT IMPLEMENTED
 ;; - delete-file                        NOT IMPLEMENTED
@@ -133,6 +133,7 @@
 (require 'cl-seq)
 (require 'seq)
 (require 'vc)
+(require 'vc-annotate)
 
 (defgroup vc-got nil
   "VC GoT backend."
@@ -544,6 +545,77 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
                (dolist (file files)
                  (vc-got--diff file)))
               (t (error "Not implemented")))))))
+
+(defun vc-got-annotate-command (file buf &optional rev)
+  "Show annotated contents of FILE in buffer BUF. If given, use revision REV."
+  (let (process-file-side-effects)
+    (with-current-buffer buf
+      ;; FIXME: vc-ensure-vc-buffer won't recognise this buffer as managed
+      ;; by got unless vc-parent-buffer points to a buffer managed by got.
+      ;; investigate why this is needed.
+      (set (make-local-variable 'vc-parent-buffer) (find-file-noselect file))
+      (apply #'vc-got--call "blame" (if rev
+                                        (list "-c" rev file)
+                                      (list file))))))
+
+(defconst vc-got--annotate-re
+  (concat "^[0-9]\\{1,\\}) " ; line number followed by )
+          "\\([a-z0-9]+\\) " ; SHA-1 of commit
+          "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) " ; year-mm-dd
+          "\\([^ ]\\)+ ")    ; author
+  "Regexp to match annotation output lines.
+
+Provides capture groups for:
+1. revision id
+2. date of commit
+3. author of commit")
+
+(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
+  "Regexp to match commit lines.
+
+Provides capture group for the commit revision id.")
+
+(defun vc-got-annotate-time ()
+  "Return the time of the next line of annotation at or after point.
+Value is returned as floating point fractional number of days."
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at vc-got--annotate-re)
+      (let ((str (match-string-no-properties 2)))
+        (vc-annotate-convert-time
+         (encode-time 0 0 0
+                      (string-to-number (substring str 8 10))
+                      (string-to-number (substring str 5 7))
+                      (string-to-number (substring str 0 4))))))))
+
+(defun vc-got-annotate-extract-revision-at-line ()
+  "Returns revision corresponding to the current line or nil."
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at vc-got--annotate-re)
+      (match-string-no-properties 1))))
+
+(defun vc-got-previous-revision (file rev)
+  "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
+  (with-temp-buffer
+    (vc-got--log file 2 rev nil nil t)
+    (goto-char (point-min))
+    (keep-lines "^commit")
+    (when (looking-at vc-got--commit-re)
+      (match-string-no-properties 1))))
+
+(defun vc-got-next-revision (file rev)
+  "Return the revision number that follows REV for FILE, or nil
+  if no such revision exists."
+  (with-temp-buffer
+    (vc-got--log file nil nil rev)
+    (keep-lines "^commit" (point-min) (point-max))
+    (goto-char (point-max))
+    (forward-line -1) ;; return from empty line to last actual commit
+    (unless (= (point) (point-min))
+      (forward-line -1)
+      (when (looking-at vc-got--commit-re)
+        (match-string-no-properties 1)))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
