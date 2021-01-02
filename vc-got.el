@@ -607,6 +607,7 @@ Value is returned as floating point fractional number of days."
   "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
   (with-temp-buffer
     (vc-got--log file 2 rev nil nil t)
+    (goto-char (point-min))
     (keep-lines "^commit")
     (when (looking-at "^commit \\([a-z0-9]+\\)")
       (match-string-no-properties 1))))
