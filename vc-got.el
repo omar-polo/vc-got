@@ -593,6 +593,11 @@ Provides capture groups for:
 2. date of commit
 3. author of commit")
 
+(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
+  "Regexp to match commit lines.
+
+Provides capture group for the commit revision id.")
+
 (defun vc-got-annotate-time ()
   "Return the time of the next line of annotation at or after point.
 Value is returned as floating point fractional number of days."
@@ -619,7 +624,7 @@ Value is returned as floating point fractional number of days."
     (vc-got--log file 2 rev nil nil t)
     (goto-char (point-min))
     (keep-lines "^commit")
-    (when (looking-at "^commit \\([a-z0-9]+\\)")
+    (when (looking-at vc-got--commit-re)
       (match-string-no-properties 1))))
 
 (defun vc-got-next-revision (file rev)
@@ -630,12 +635,10 @@ Value is returned as floating point fractional number of days."
     (keep-lines "^commit" (point-min) (point-max))
     (goto-char (point-max))
     (forward-line -1) ;; return from empty line to last actual commit
-    (when (looking-at  "^commit \\([a-z0-9]+\\)")
-      ;; no need to continue if looking at top commit
-      (unless (string= rev (match-string-no-properties 1))
-        (forward-line -1)
-        (when (looking-at  "^commit \\([a-z0-9]+\\)")
-          (match-string-no-properties 1))))))
+    (unless (= (point) (point-min))
+      (forward-line -1)
+      (when (looking-at vc-got--commit-re)
+        (match-string-no-properties 1)))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
