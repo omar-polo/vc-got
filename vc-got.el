@@ -665,9 +665,11 @@ Value is returned as floating point fractional number of days."
         (when (search-forward heading nil t)
           (forward-line)
           (while (and (not found)
-                      (looking-at ".*="))       ;too broad?
+                      (looking-at ".*=") ;too broad?
+                      (not (= (point) (point-max))))
             (when (looking-at ".*url = \\(.*\\)")
-              (setq found (match-string-no-properties 1))))
+              (setq found (match-string-no-properties 1)))
+            (forward-line))
           found)))))
 
 (provide 'vc-got)
