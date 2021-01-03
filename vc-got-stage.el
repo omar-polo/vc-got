@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'rx)
 (require 'vc)
 
 (defvar vc-got-program)                 ;vc-got.el
@@ -86,11 +87,12 @@ PROC is the process, STRING part of its output."
           (insert string)
           (save-excursion
             (beginning-of-line)
-            (let ((msg (cond ((looking-at "^stage this change?")
-                              "Stage this change? ")
-                             ((looking-at "^stage this addition?")
-                              "Stage this addition? "))))
-              (when msg
+            (when (looking-at (rx bol
+                                  (group (zero-or-one "un")
+                                         "stage"
+                                         (zero-or-more anychar)
+                                         "?")))
+              (let ((msg (match-string 1)))
                 (kill-line)
                 (process-send-string buf (if (y-or-n-p msg) "y\n" "n\n"))
                 (erase-buffer)))))))))
