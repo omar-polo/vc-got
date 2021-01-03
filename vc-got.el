@@ -182,7 +182,8 @@ Assume `default-directory' is inside a got worktree."
 
 (defun vc-got--call (&rest args)
   "Call `vc-got-program' in the `default-directory' with ARGS and put the output in the current buffer."
-  (apply #'process-file vc-got-program nil (current-buffer) nil args))
+  (apply #'process-file vc-got-program nil (current-buffer) nil
+         (cl-remove-if #'null (flatten-list args))))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
@@ -206,16 +207,13 @@ worktree."
   (let (process-file-side-effects)
     (vc-got-with-worktree (or path default-directory)
       (zerop
-       (apply #'vc-got--call
-              (cl-remove-if #'null
-                            (flatten-list
-                             (list "log"
-                                   (when limit (list "-l" (format "%s" limit)))
-                                   (when start-commit (list "-c" start-commit))
-                                   (when stop-commit (list "-x" stop-commit))
-                                   (when search-pattern (list "-s" search-pattern))
-                                   (when reverse '("-R"))
-                                   path))))))))
+       (vc-got--call "log"
+                     (when limit (list "-l" (format "%s" limit)))
+                     (when start-commit (list "-c" start-commit))
+                     (when stop-commit (list "-x" stop-commit))
+                     (when search-pattern (list "-s" search-pattern))
+                     (when reverse '("-R"))
+                     path)))))
 
 (defun vc-got--status (dir-or-file &rest files)
   "Return the output of ``got status''.
