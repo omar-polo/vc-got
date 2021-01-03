@@ -445,10 +445,10 @@ DIR-OR-FILE."
 (defun vc-got-unregister (file)
   "Unregister given FILE, i.e. remove file if it was versioned
 file or revert it if it was added but not committed."
-  (pcase ((status (cdr (vc-got--parse-status (vc-got--status file)))))
+  (pcase (status (cdr (vc-got--parse-status (vc-got--status file))))
     ('unregistered nil) ;; no need for action
     ((or 'added 'missing) (vc-got--revert file))
-    (default (vc-got--remove file))))
+    (_ (vc-got--remove file))))
 
 (defalias 'vc-got-responsible-p #'vc-got-root)
 
