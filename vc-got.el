@@ -107,7 +107,7 @@
 ;; - extra-menu                         NOT IMPLEMENTED
 ;; - extra-dir-menu                     NOT IMPLEMENTED
 ;; - conflicted-files                   DONE
-;; - repository-url                     NOT IMPLEMENTED
+;; - repository-url                     DONE
 
 ;; TODO: use the idiom
 ;;      (let (process-file-side-effects) ...)
@@ -629,6 +629,23 @@ Value is returned as floating point fractional number of days."
                            (file-in-directory-p file dir))
                   (push file conflicts))
              finally return conflicts)))
+
+(defun vc-got-repository-url (_file &optional remote-name)
+  "Return URL for REMOTE-NAME, or for \"origin\" if nil."
+  (let* ((default-directory (vc-got--repo-root))
+         (remote-name (or remote-name "origin"))
+         (heading (concat "[remote \"" remote-name "\"]"))
+         found)
+    (with-temp-buffer
+      (insert-file-contents "config")
+      (goto-char (point-min))
+      (when (search-forward heading nil t)
+        (forward-line)
+        (while (and (not found)
+                    (looking-at ".*="))       ;too broad?
+          (when (looking-at ".*url = \\(.*\\)")
+            (setq found (match-string-no-properties 1))))
+        found))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
