@@ -106,7 +106,7 @@
 ;; - find-file-hook                     NOT IMPLEMENTED
 ;; - extra-menu                         NOT IMPLEMENTED
 ;; - extra-dir-menu                     NOT IMPLEMENTED
-;; - conflicted-files                   NOT IMPLEMENTED
+;; - conflicted-files                   DONE
 ;; - repository-url                     NOT IMPLEMENTED
 
 ;; TODO: use the idiom
@@ -614,6 +614,21 @@ Value is returned as floating point fractional number of days."
       (forward-line -1)
       (when (looking-at vc-got--commit-re)
         (match-string-no-properties 1)))))
+
+(defun vc-got-conflicted-files (dir)
+  "Return the list of files with conflicts in directory DIR."
+  (let* ((root (vc-got-root dir))
+         (default-directory root)
+         (process-file-side-effects))
+    ;; for got it doesn't matter where we call "got status", it will
+    ;; always report file paths from the root of the repo.
+    (cl-loop with conflicts = nil
+             for (file . status) in (vc-got--parse-status-flag
+                                     (vc-got--status "."))
+             do (when (and (eq status 'conflict)
+                           (file-in-directory-p file dir))
+                  (push file conflicts))
+             finally return conflicts)))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
