@@ -636,7 +636,8 @@ Value is returned as floating point fractional number of days."
 
 (defun vc-got-delete-file (file)
   "Delete FILE locally and mark it deleted in work tree."
-  (vc-got--remove file t))
+  (let ((inhibit-read-only t))
+    (vc-got--remove file t)))
 
 (defun vc-got-conflicted-files (dir)
   "Return the list of files with conflicts in directory DIR."
