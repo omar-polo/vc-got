@@ -135,6 +135,8 @@
 (require 'vc)
 (require 'vc-annotate)
 
+(require 'vc-got-stage)
+
 (defgroup vc-got nil
   "VC GoT backend."
   :group 'vc)
@@ -325,6 +327,12 @@ DIR-OR-FILE."
   (apply #'vc-got--call "diff"
          (append (vc-switches 'got 'diff)
                  (mapcar #'file-relative-name args))))
+
+(defun vc-got--unstage (file-or-directory)
+  "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
+If it's nil, unstage every staged changes across the entire work
+tree."
+  (vc-got--call "unstage" file-or-directory))
 
 
 ;; Backend properties
