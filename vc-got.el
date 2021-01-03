@@ -325,6 +325,14 @@ DIR-OR-FILE."
          (append (vc-switches 'got 'diff)
                  (mapcar #'file-relative-name args))))
 
+(defun vc-got--remove (file &optional force keep-local)
+  "Internal helper to removing FILE from got."
+  (vc-got-with-worktree (or file default-directory)
+    (vc-got--call "remove"
+                  (when force "-f")
+                  (when keep-local "-k")
+                  file)))
+
 
 ;; Backend properties
 
@@ -440,14 +448,6 @@ file or revert it if it was added but not committed."
     ('unregistered nil) ;; no need for action
     ((or 'added 'missing) (vc-got--revert file))
     (default (vc-got--remove file))))
-
-(defun vc-got--remove (file &optional force keep-local)
-  "Internal helper to removing FILE from got."
-  (vc-got--call "remove" (if force "-f" "") (if keep-local "-k" "")))
-
-(defun vc-got-delete-file (file)
-  "Delete FILE locally and mark it deleted in work tree."
-  (vc-got--remove file t))
 
 (defalias 'vc-got-responsible-p #'vc-got-root)
 
@@ -633,6 +633,10 @@ Value is returned as floating point fractional number of days."
       (forward-line -1)
       (when (looking-at vc-got--commit-re)
         (match-string-no-properties 1)))))
+
+(defun vc-got-delete-file (file)
+  "Delete FILE locally and mark it deleted in work tree."
+  (vc-got--remove file t))
 
 (defun vc-got-conflicted-files (dir)
   "Return the list of files with conflicts in directory DIR."
