@@ -25,12 +25,14 @@
 
 ;;; Code:
 
+(require 'log-edit)
 (require 'rx)
 (require 'vc)
 
 (defvar vc-got-program)                 ;vc-got.el
 (declare-function vc-got--diff    "vc-got")
 (declare-function vc-got--unstage "vc-got" (file))
+(declare-function vc-got-checkin  "vc-got" (fileset comment))
 
 (defvar vc-got-stage--process nil
   "The got stage process.")
@@ -126,6 +128,22 @@ If FILESET is nil, show the diff for every staged hunks."
           (dolist (file fileset)
             (vc-got--diff "-s" file))
         (vc-got--diff "-s")))))
+
+(defun vc-got-stage-commit ()
+  "Commit staged hunks."
+  (interactive)
+  (let ((buf (get-buffer-create "*vc-got-stage-commit*")))
+    (pop-to-buffer buf)
+    (log-edit (lambda ()
+                (interactive)
+                (let ((msg (buffer-substring-no-properties (point-min)
+                                                           (point-max))))
+                  (kill-buffer)
+                  (vc-got-checkin nil msg)))
+              t
+              ;; TODO: add here an alist of
+              ;; '((vc-log-fileset . (staged-files)))
+              )))
 
 (provide 'vc-got-stage)
 ;;; vc-got-stage.el ends here

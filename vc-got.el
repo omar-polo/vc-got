@@ -444,6 +444,10 @@ tree."
 
 (defalias 'vc-got-responsible-p #'vc-got-root)
 
+;; XXX: generally speaking, files cannot be nil.  But we have to
+;; handle that case too, because vc-got-stage-commit will call
+;; vc-got-checking with fileset nil to commit the current staged
+;; hunks.
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
