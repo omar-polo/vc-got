@@ -48,7 +48,7 @@
 ;; * register                           DONE
 ;; - responsible-p                      DONE
 ;; - receive-file                       NOT NEEDED, default `register' works fine
-;; - unregister                         DONE
+;; - unregister                         NOT IMPLEMENTED, no use case
 ;; * checkin                            DONE
 ;; * find-revision                      DONE
 ;; * checkout                           NOT IMPLEMENTED
@@ -441,14 +441,6 @@ DIR-OR-FILE."
 (defun vc-got-register (files &optional _comment)
   "Register FILES, passing `vc-register-switches' to the backend command."
   (vc-got--add files))
-
-(defun vc-got-unregister (file)
-  "Unregister given FILE, i.e. remove file if it was versioned
-file or revert it if it was added but not committed."
-  (pcase (status (cdr (vc-got--parse-status (vc-got--status file))))
-    ('unregistered nil) ;; no need for action
-    ((or 'added 'missing) (vc-got--revert file))
-    (_ (vc-got--remove file))))
 
 (defalias 'vc-got-responsible-p #'vc-got-root)
 
