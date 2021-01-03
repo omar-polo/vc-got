@@ -651,17 +651,24 @@ Value is returned as floating point fractional number of days."
   (let* ((default-directory (vc-got--repo-root))
          (remote-name (or remote-name "origin"))
          (heading (concat "[remote \"" remote-name "\"]"))
+         (conf (cond ((file-exists-p ".git/config")
+                      ".git/config")
+                     ((file-exists-p ".git")
+                      nil)
+                     ((file-exists-p "config")
+                      "config")))
          found)
     (with-temp-buffer
-      (insert-file-contents "config")
-      (goto-char (point-min))
-      (when (search-forward heading nil t)
-        (forward-line)
-        (while (and (not found)
-                    (looking-at ".*="))       ;too broad?
-          (when (looking-at ".*url = \\(.*\\)")
-            (setq found (match-string-no-properties 1))))
-        found))))
+      (when conf
+        (insert-file-contents conf)
+        (goto-char (point-min))
+        (when (search-forward heading nil t)
+          (forward-line)
+          (while (and (not found)
+                      (looking-at ".*="))       ;too broad?
+            (when (looking-at ".*url = \\(.*\\)")
+              (setq found (match-string-no-properties 1))))
+          found)))))
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
