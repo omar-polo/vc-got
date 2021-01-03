@@ -328,10 +328,11 @@ DIR-OR-FILE."
 (defun vc-got--remove (file &optional force keep-local)
   "Internal helper to removing FILE from got."
   (vc-got-with-worktree (or file default-directory)
-    (vc-got--call "remove"
-                  (when force "-f")
-                  (when keep-local "-k")
-                  file)))
+    (with-temp-buffer
+      (vc-got--call "remove"
+                    (when force "-f")
+                    (when keep-local "-k")
+                    file))))
 
 
 ;; Backend properties
@@ -636,8 +637,7 @@ Value is returned as floating point fractional number of days."
 
 (defun vc-got-delete-file (file)
   "Delete FILE locally and mark it deleted in work tree."
-  (let ((inhibit-read-only t))
-    (vc-got--remove file t)))
+  (vc-got--remove file t))
 
 (defun vc-got-conflicted-files (dir)
   "Return the list of files with conflicts in directory DIR."
