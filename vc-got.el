@@ -47,7 +47,7 @@
 ;;      do.
 ;; * register                           DONE
 ;; - responsible-p                      DONE
-;; - receive-file                       NOT IMPLEMENTED
+;; - receive-file                       NOT NEEDED, default `register' works fine
 ;; - unregister                         DONE
 ;; * checkin                            DONE
 ;; * find-revision                      DONE
@@ -61,7 +61,7 @@
 ;; - pull                               DONE
 ;; - push                               DONE
 ;;      uses git
-;; - steal-lock                         NOT IMPLEMENTED
+;; - steal-lock                         NOT NEEDED, `got' is not using locks
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
 ;;      what it is supposed to do.
@@ -92,19 +92,19 @@
 ;; - retrieve-tag                       NOT IMPLEMENTED
 ;;
 ;; MISCELLANEOUS                        NOT IMPLEMENTED
-;; - make-version-backups-p             NOT IMPLEMENTED
+;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
 ;; - root                               DONE
 ;; - ignore                             NOT IMPLEMENTED
 ;; - ignore-completion-table            NOT IMPLEMENTED
 ;; - previous-revision                  DONE
 ;; - next-revision                      DONE
 ;; - log-edit-mode                      NOT IMPLEMENTED
-;; - check-headers                      NOT IMPLEMENTED
+;; - check-headers                      NOT NEEDED, `got' does not use headers
 ;; - delete-file                        DONE
-;; - rename-file                        NOT IMPLEMENTED
-;; - find-file-hook                     NOT IMPLEMENTED
-;; - extra-menu                         NOT IMPLEMENTED
-;; - extra-dir-menu                     NOT IMPLEMENTED
+;; - rename-file                        NOT NEEDED, `delete' + `register' is enough
+;; - find-file-hook                     NOT NEEDED, no need for hooks yet
+;; - extra-menu                         NOT IMPLEMENTED, add `import', `integrate', `stage'?
+;; - extra-dir-menu                     NOT IMPLEMENTED, same as above
 ;; - conflicted-files                   DONE
 ;; - repository-url                     DONE
 
