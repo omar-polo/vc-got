@@ -387,10 +387,14 @@ DIR-OR-FILE."
                     (push s res)))
              finally (funcall update-function res nil))))
 
-(defun vc-got-dir-extra-headers (_dir)
-  (concat
-   (propertize "Branch     : " 'face 'font-lock-type-face)
-   (vc-got--current-branch)))
+(defun vc-got-dir-extra-headers (dir)
+  "Return a string for the `vc-dir' buffer heading for directory DIR."
+  (concat (propertize "Repository : " 'face 'font-lock-type-face)
+          (vc-got--repo-root) "\n"
+          (propertize "Remote URL : " 'face 'font-lock-type-face)
+          (vc-got-repository-url dir) "\n"
+          (propertize "Branch     : " 'face 'font-lock-type-face)
+          (vc-got--current-branch)))
 
 (defun vc-got-working-revision (file)
   "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
