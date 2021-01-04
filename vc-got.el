@@ -216,43 +216,55 @@ worktree."
                      (when reverse '("-R"))
                      path)))))
 
-(defun vc-got--status (dir-or-file &rest files)
-  "Return the output of ``got status''.
-
+(defun vc-got--status (status-codes dir-or-file &rest files)
+  "Return a list of lists '(FILE STATUS STAGE-STATUS).
 DIR-OR-FILE can be either a directory or a file.  If FILES is
 given, return the status of those files, otherwise the status of
-DIR-OR-FILE."
+DIR-OR-FILE.  STATUS-CODES is either nil, or a string that's
+passed as the -s flag to got status to limit the types of status
+to report (e.g. \"CD\" to report only conflicts and deleted
+files)."
   (vc-got-with-worktree dir-or-file
     (with-temp-buffer
-      (if files
-          (apply #'vc-got--call "status" files)
-        (vc-got--call "status" dir-or-file))
-      (buffer-string))))
+      (when (zerop (vc-got--call "status"
+                                 (when status-codes (list "-s" status-codes))
+                                 (or files dir-or-file)))
+        (goto-char (point-min))
+        (cl-loop until (eobp)
+                 ;; the format of each line is
+                 ;; <status-char> <stage-char> <spc> <filename> \n
+                 collect (let* ((file-status (prog1 (char-after)
+                                               (forward-char)))
+                                (stage-status (prog1 (char-after)
+                                                (forward-char)))
+                                (filename (progn
+                                            (forward-char)
+                                            (buffer-substring (point)
+                                                              (line-end-position)))))
+                           (list filename
+                                 (vc-got--parse-status-char file-status)
+                                 (vc-got--parse-stage-char stage-status)))
+                 do (forward-line))))))
 
-(defun vc-got--parse-status-flag (flag)
-  "Parse FLAG, see `vc-state'."
-  ;; got outputs nothing if the file is up-to-date
-  (if (string-empty-p flag)
-      'up-to-date
-    ;; trying to follow the order of the manpage
-    (cl-case (aref flag 0)
-      (?M 'edited)
-      (?A 'added)
-      (?D 'removed)
-      (?C 'conflict)
-      (?! 'missing)
-      (?~ 'edited) ;XXX: what does it means for a file to be ``obstructed''?
-      (?? 'unregistered)
-      (?m 'edited) ;modified file modes
-      (?N nil))))
+(defun vc-got--parse-status-char (c)
+  "Parse status char C into a symbol accepted by `vc-state'."
+  (cl-case c
+    (?M 'edited)
+    (?A 'added)
+    (?D 'removed)
+    (?C 'conflict)
+    (?! 'missing)
+    (?~ 'edited) ;XXX: what does it means for a file to be ``obstructed''?
+    (?? 'unregistered)
+    (?m 'edited) ;modified file modes
+    (?N nil)))
 
-(defun vc-got--parse-status (output)
-  "Parse the OUTPUT of got status and return an alist of (FILE . STATUS)."
-  ;; XXX: the output of got is line-oriented and will break if
-  ;; filenames contains spaces or newlines.
-  (cl-loop for line in (split-string output "\n" t)
-           collect (cl-destructuring-bind (status file) (split-string line " " t " ")
-                     `(,file . ,(vc-got--parse-status-flag status)))))
+(defun vc-got--parse-stage-char (c)
+  "Parse the stage status char C into a symbol."
+  (cl-case c
+    (?M 'edited)
+    (?A 'added)
+    (?D 'removed)))
 
 (defun vc-got--tree-parse ()
   "Parse into an alist the output of got tree -i in the current buffer."
@@ -367,14 +379,19 @@ tree."
   (if (file-directory-p file)
       nil                               ;got doesn't track directories
     (when (vc-find-root file ".got")
-      (let ((status (vc-got--status file)))
-        (not (or (string-prefix-p "?" status)
-                 (string-prefix-p "N" status)))))))
+      (let ((s (vc-got-state file)))
+        (not (or (eq s 'unregistered)
+                 (null s)))))))
 
 (defun vc-got-state (file)
   "Return the current version control state of FILE.  See `vc-state'."
   (unless (file-directory-p file)
-    (vc-got--parse-status-flag (vc-got--status file))))
+    ;; Manually calling got status and checking the result inline to
+    ;; avoid building the data structure in vc-got--status.
+    (with-temp-buffer
+      (when (zerop (vc-got--call "status" file))
+        (goto-char (point-min))
+        (vc-got--parse-status-char (char-after))))))
 
 (defun vc-got-dir-status-files (dir files update-function)
   (let* ((fs (seq-filter (lambda (file)
@@ -383,12 +400,9 @@ tree."
                                 (not (string= file ".got"))))
                          (or files
                              (directory-files dir))))
-         (stats (vc-got--parse-status (apply #'vc-got--status dir files)))
-         (res (mapcar (lambda (x)
-                        (list (car x) (cdr x) nil))
-                      stats)))
+         (res (vc-got--status nil dir files)))
     (cl-loop for file in fs
-             do (let ((s (unless (or (cdr (assoc file stats #'string=))
+             do (let ((s (unless (or (cdr (assoc file res #'string=))
                                      (file-directory-p file))
                            (when (file-exists-p file)
                              ;; if file doesn't exists, it's a
@@ -645,8 +659,7 @@ Value is returned as floating point fractional number of days."
     ;; for got it doesn't matter where we call "got status", it will
     ;; always report file paths from the root of the repo.
     (cl-loop with conflicts = nil
-             for (file . status) in (vc-got--parse-status
-                                     (vc-got--status "."))
+             for (file status _) in (vc-got--status "C" ".")
              do (when (and (eq status 'conflict)
                            (file-in-directory-p file dir))
                   (push file conflicts))
