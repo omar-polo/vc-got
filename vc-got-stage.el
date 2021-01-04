@@ -80,6 +80,14 @@
                             :filter #'vc-got-stage--filter
                             :sentinel #'vc-got-stage--sentinel))))))
 
+(defun vc-got-stage--kill-separators ()
+  "Kill the separator lines in interactive got stage."
+  (save-excursion
+    (forward-line -2)
+    (kill-line)
+    (goto-char (point-min))
+    (kill-line)))
+
 (defun vc-got-stage--filter (proc string)
   "Filter for got stage process.
 PROC is the process, STRING part of its output."
@@ -97,7 +105,8 @@ PROC is the process, STRING part of its output."
                                          (zero-or-more anychar)
                                          "?")))
               (let ((msg (match-string 1)))
-                (kill-line)
+                (kill-line)             ; kill the question
+                (vc-got-stage--kill-separators)
                 (process-send-string buf (if (y-or-n-p msg) "y\n" "n\n"))
                 (erase-buffer)))))))))
 
