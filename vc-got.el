@@ -218,7 +218,6 @@ worktree."
 
 (defun vc-got--status (dir-or-file &rest files)
   "Return the output of ``got status''.
-
 DIR-OR-FILE can be either a directory or a file.  If FILES is
 given, return the status of those files, otherwise the status of
 DIR-OR-FILE."
