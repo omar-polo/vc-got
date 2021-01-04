@@ -634,7 +634,7 @@ Value is returned as floating point fractional number of days."
     ;; for got it doesn't matter where we call "got status", it will
     ;; always report file paths from the root of the repo.
     (cl-loop with conflicts = nil
-             for (file . status) in (vc-got--parse-status-flag
+             for (file . status) in (vc-got--parse-status
                                      (vc-got--status "."))
              do (when (and (eq status 'conflict)
                            (file-in-directory-p file dir))
