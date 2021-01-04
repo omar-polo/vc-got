@@ -394,6 +394,9 @@ tree."
         (vc-got--parse-status-char (char-after))))))
 
 (defun vc-got-dir-status-files (dir files update-function)
+  "Build the status for FILES in DIR.
+The builded result is given to the callback UPDATE-FUNCTIONS.  If
+FILES is nil, consider all the files in DIR."
   (let* ((fs (seq-filter (lambda (file)
                            (and (not (string= file ".."))
                                 (not (string= file "."))
@@ -441,6 +444,7 @@ tree."
      "0")))
 
 (defun vc-got-checkout-model (_files)
+  "Got uses an implicit checkout model for every file."
   'implicit)
 
 (defun vc-got-mode-line-string (file)
