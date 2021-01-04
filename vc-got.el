@@ -376,21 +376,16 @@ DIR-OR-FILE."
                          (or files
                              (directory-files dir))))
          (stats (vc-got--parse-status (apply #'vc-got--status dir files)))
-         (res))
-    ;; collect deleted and removed files
-    (cl-loop for (file . st) in stats
-             do (when (or (eq st 'missing)
-                          (eq st 'removed))
-                  (push (list file st nil) res)))
+         (res (mapcar (lambda (x)
+                        (list (car x) (cdr x) nil))
+                      stats)))
     (cl-loop for file in fs
-             do (let ((s (if (file-directory-p file)
-                             (list file 'unregistered nil)
-                           (if-let (status (cdr (assoc file stats #'string=)))
-                               (list file status nil)
+             do (let ((s (unless (or (cdr (assoc file stats #'string=))
+                                     (file-directory-p file))
+                           (when (file-exists-p file)
                              ;; if file doesn't exists, it's a
                              ;; untracked file that was removed.
-                             (when (file-exists-p file)
-                               (list file 'up-to-date nil))))))
+                             (list file 'up-to-date nil)))))
                   (when s
                     (push s res)))
              finally (funcall update-function res nil))))
