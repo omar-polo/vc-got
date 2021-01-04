@@ -391,7 +391,9 @@ tree."
     (with-temp-buffer
       (when (zerop (vc-got--call "status" file))
         (goto-char (point-min))
-        (vc-got--parse-status-char (char-after))))))
+        (if (eobp)
+            'up-to-date
+          (vc-got--parse-status-char (char-after)))))))
 
 (defun vc-got-dir-status-files (dir files update-function)
   "Build the status for FILES in DIR.
