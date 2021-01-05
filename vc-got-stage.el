@@ -148,7 +148,7 @@ If FILESET is nil, show the diff for every staged hunks."
   (interactive)
   (let* ((default-directory (vc-got-root default-directory))
          (buf (get-buffer-create "*vc-got-stage-commit*"))
-         (status (vc-got--status "M" "."))
+         (status (vc-got--status "MAD" "."))
          (staged-files (cl-loop for (file _ staged) in status
                                 when staged
                                 collect file)))
