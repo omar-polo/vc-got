@@ -146,8 +146,7 @@
 
 (defcustom vc-got-program "got"
   "Name of the Got executable (excluding any arguments)."
-  :type 'string
-  :group 'vc-got)
+  :type 'string)
 
 (defcustom vc-got-diff-switches t
   "String or list of strings specifying switches for Got diff under VC.
@@ -155,8 +154,7 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
   :type '(choice (const :tag "Unspecified" nil)
                  (const :tag "None" t)
                  (string :tag "Argument String")
-                 (repeat :tag "Argument List" :value ("") string))
-  :group 'vc-got)
+                 (repeat :tag "Argument List" :value ("") string)))
 
 ;; helpers
 (defun vc-got--program-version ()
