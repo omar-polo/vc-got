@@ -35,7 +35,7 @@
 ;; * state                              DONE
 ;; - dir-status-files                   DONE
 ;; - dir-extra-headers                  DONE
-;; - dir-printer                        NOT IMPLEMENTED
+;; - dir-printer                        DONE
 ;; - status-fileinfo-extra              NOT IMPLEMENTED
 ;; * working-revision                   DONE
 ;; * checkout-model                     DONE
@@ -133,6 +133,10 @@
 (require 'seq)
 (require 'vc)
 (require 'vc-annotate)
+
+;; FIXME: avoid loading this?  We only need it for
+;; vc-dir-filename-mouse-map in our custom printer.
+(require 'vc-dir)
 
 (require 'vc-got-stage)
 
@@ -233,17 +237,19 @@ files)."
         (cl-loop until (eobp)
                  ;; the format of each line is
                  ;; <status-char> <stage-char> <spc> <filename> \n
-                 collect (let* ((file-status (prog1 (char-after)
+                 collect (let* ((file-status (prog1 (vc-got--parse-status-char
+                                                     (char-after))
                                                (forward-char)))
-                                (stage-status (prog1 (char-after)
+                                (stage-status (prog1 (vc-got--parse-stage-char
+                                                      (char-after))
                                                 (forward-char)))
                                 (filename (progn
                                             (forward-char)
                                             (buffer-substring (point)
                                                               (line-end-position)))))
                            (list filename
-                                 (vc-got--parse-status-char file-status)
-                                 (vc-got--parse-stage-char stage-status)))
+                                 (or file-status (and stage-status 'up-to-date))
+                                 stage-status))
                  do (forward-line))))))
 
 (defun vc-got--parse-status-char (c)
@@ -262,9 +268,9 @@ files)."
 (defun vc-got--parse-stage-char (c)
   "Parse the stage status char C into a symbol."
   (cl-case c
-    (?M 'edited)
-    (?A 'added)
-    (?D 'removed)))
+    (?M 'edit)
+    (?A 'add)
+    (?D 'remove)))
 
 (defun vc-got--tree-parse ()
   "Parse into an alist the output of got tree -i in the current buffer."
@@ -425,6 +431,44 @@ FILES is nil, consider all the files in DIR."
           (vc-got-repository-url dir) "\n"
           (propertize "Branch     : " 'face 'font-lock-type-face)
           (vc-got--current-branch)))
+
+(defun vc-got-dir-printer (info)
+  "Pretty-printer for the vc-dir-fileinfo structure INFO."
+  (let* ((isdir (vc-dir-fileinfo->directory info))
+	 (state (if isdir "" (vc-dir-fileinfo->state info)))
+	 (stage-state (vc-dir-fileinfo->extra info))
+	 (filename (vc-dir-fileinfo->name info)))
+    (insert
+     (propertize
+      (format "%c" (if (vc-dir-fileinfo->marked info) ?* ? ))
+      'face 'font-lock-type-face)
+     "   "
+     (propertize
+      (format "%-14s" state)
+      'face (cond ((eq state 'up-to-date) 'font-lock-builtin-face)
+		  ((memq state '(missing conflict)) 'font-lock-warning-face)
+		  ((eq state 'edited) 'font-lock-constant-face)
+		  (t 'font-lock-variable-name-face))
+      'mouse-face 'highlight)
+     " "
+     (propertize
+      (if stage-state
+	  (format "staged:%-7s" stage-state)
+	(format "%-14s" ""))
+      'face (cond ((memq stage-state '(add edit)) 'font-lock-constant-face)
+		  ((eq stage-state 'remove) 'font-lock-warning-face)
+		  (t 'font-lock-variable-name-face)))
+     " "
+     (propertize
+      (format "%s" filename)
+      'face
+      (if isdir 'font-lock-comment-delimiter-face 'font-lock-function-name-face)
+      'help-echo
+      (if isdir
+	  "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
+	"File\nmouse-3: Pop-up menu")
+      'mouse-face 'highlight
+      'keymap vc-dir-filename-mouse-map))))
 
 (defun vc-got-working-revision (file)
   "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
@@ -696,6 +740,18 @@ Value is returned as floating point fractional number of days."
               (setq found (match-string-no-properties 1)))
             (forward-line))
           found)))))
+
+
+;; hacks
+(defun vc-got-fix-dir-move-to-goal-column (fn)
+  "Move the cursor on the file column.
+Adviced around vc-dir-move-to-goal-column because it hardcodes column 25."
+  (if (not (vc-find-root default-directory ".got"))
+      (funcall fn)
+    (beginning-of-line)
+    (unless (eolp)
+      (forward-char 34))))
+(advice-add 'vc-dir-move-to-goal-column :around #'vc-got-fix-dir-move-to-goal-column)
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
