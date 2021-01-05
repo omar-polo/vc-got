@@ -246,7 +246,7 @@ files)."
                                             (buffer-substring (point)
                                                               (line-end-position)))))
                            (list filename
-                                 (or file-status (and stage-status 'up-to-date))
+                                 (or file-status (and stage-status 'staged))
                                  stage-status))
                  do (forward-line))))))
 
