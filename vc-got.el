@@ -158,7 +158,7 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
 
 ;; helpers
 (defun vc-got--program-version ()
-  "Returns the version string of used `Got' command."
+  "Return the version string of used `Got' command."
   (let (process-file-side-effects)
     (with-temp-buffer
       (vc-got--call "-V")
@@ -288,6 +288,9 @@ files)."
              `(,filename . ,obj))))
 
 (defun vc-got--tree (commit path)
+  "Return an alist representing the got tree command output.
+The outputted tree will be localised for the given PATH at the
+given COMMIT."
   (vc-got-with-worktree path
     (with-temp-buffer
       (vc-got--call "tree" "-c" commit "-i" path)
@@ -625,7 +628,7 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
               (t (error "Not implemented")))))))
 
 (defun vc-got-annotate-command (file buf &optional rev)
-  "Show annotated contents of FILE in buffer BUF. If given, use revision REV."
+  "Show annotated contents of FILE in buffer BUF.  If given, use revision REV."
   (let (process-file-side-effects)
     (with-current-buffer buf
       ;; FIXME: vc-ensure-vc-buffer won't recognise this buffer as managed
@@ -667,7 +670,7 @@ Value is returned as floating point fractional number of days."
                       (string-to-number (substring str 0 4))))))))
 
 (defun vc-got-annotate-extract-revision-at-line ()
-  "Returns revision corresponding to the current line or nil."
+  "Return revision corresponding to the current line or nil."
   (save-excursion
     (beginning-of-line)
     (when (looking-at vc-got--annotate-re)
@@ -683,8 +686,7 @@ Value is returned as floating point fractional number of days."
       (match-string-no-properties 1))))
 
 (defun vc-got-next-revision (file rev)
-  "Return the revision number that follows REV for FILE, or nil
-  if no such revision exists."
+  "Return the revision number that follows REV for FILE, or nil if no such revision exists."
   (with-temp-buffer
     (vc-got--log file nil nil rev)
     (keep-lines "^commit" (point-min) (point-max))
