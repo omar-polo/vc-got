@@ -3,8 +3,6 @@
 This is an **experimental** Emacs VC back-end for the [Game of
 Tree](http://gameoftrees.org/) version control system.
 
-Use it at your own risk.
-
 ------
 
 To start using it, you need to add `Got` to `vc-handled-backends` and
@@ -32,3 +30,28 @@ With `use-package` something like this should be enough:
   (add-to-list 'vc-handled-backends 'Got)
   (add-to-list 'vc-directory-exclusion-list ".got"))
 ```
+
+
+## Stage hunks
+
+Unlike other VC backends, `vc-got` is able to stage and commit
+individual changes.  It's still WIP, but usable.
+
+ - `vc-got-stage-files` guides the user through the stage process,
+   like `got stage -p` (or `git add -p`).  It operates on the current
+   file or on the marked ones in `*vc-dir*`
+ - `vc-got-stage-unstage` is similar, except that it un-stages the
+   changes.
+ - `vc-got-stage-diff` show the staged diff
+ - `vc-got-stage-commit` commits the staged changes
+
+Here's an example of the `*vc-dir*` buffer when some edits were staged
+on a file
+
+![vc-dir buffer with a staged file](images/vc-dir.png "vc-dir buffer with a staged file")
+
+and an example of the interactive stage operation with
+`vc-got-stage-files`
+
+![interactive stage operation](images/vc-got-stage-files.png
+"interactive stage operation")

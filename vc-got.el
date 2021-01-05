@@ -443,7 +443,15 @@ FILES is nil, consider all the files in DIR."
      (propertize
       (format "%c" (if (vc-dir-fileinfo->marked info) ?* ? ))
       'face 'font-lock-type-face)
-     "   "
+     " "
+     (propertize
+      (if stage-state
+	  (format "staged:%-6s" stage-state)
+	(format "%-13s" ""))
+      'face (cond ((memq stage-state '(add edit)) 'font-lock-constant-face)
+		  ((eq stage-state 'remove) 'font-lock-warning-face)
+		  (t 'font-lock-variable-name-face)))
+     " "
      (propertize
       (format "%-14s" state)
       'face (cond ((eq state 'up-to-date) 'font-lock-builtin-face)
@@ -451,14 +459,6 @@ FILES is nil, consider all the files in DIR."
 		  ((eq state 'edited) 'font-lock-constant-face)
 		  (t 'font-lock-variable-name-face))
       'mouse-face 'highlight)
-     " "
-     (propertize
-      (if stage-state
-	  (format "staged:%-7s" stage-state)
-	(format "%-14s" ""))
-      'face (cond ((memq stage-state '(add edit)) 'font-lock-constant-face)
-		  ((eq stage-state 'remove) 'font-lock-warning-face)
-		  (t 'font-lock-variable-name-face)))
      " "
      (propertize
       (format "%s" filename)
@@ -750,7 +750,7 @@ Adviced around vc-dir-move-to-goal-column because it hardcodes column 25."
       (funcall fn)
     (beginning-of-line)
     (unless (eolp)
-      (forward-char 34))))
+      (forward-char 31))))
 (advice-add 'vc-dir-move-to-goal-column :around #'vc-got-fix-dir-move-to-goal-column)
 
 (provide 'vc-got)
