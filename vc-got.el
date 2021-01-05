@@ -727,8 +727,8 @@ Value is returned as floating point fractional number of days."
                      ((file-exists-p "config")
                       "config")))
          found)
-    (with-temp-buffer
-      (when conf
+    (when conf
+      (with-temp-buffer
         (insert-file-contents conf)
         (goto-char (point-min))
         (when (search-forward heading nil t)
