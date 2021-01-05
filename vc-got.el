@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2020  Omar Polo
 
-;; Author: Omar Polo <op@venera>
+;; Author: Omar Polo <op@omarpolo.com>
 ;; Keywords: vc
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -108,11 +108,6 @@
 ;; - conflicted-files                   DONE
 ;; - repository-url                     DONE
 
-;; TODO: use the idiom
-;;      (let (process-file-side-effects) ...)
-;; when the got command WON'T change the file.  This can enable some
-;; emacs optimizations
-
 ;; TODO: vc-git has most function that starts with:
 ;;
 ;;    (let* ((root (vc-git-root default-directory))
@@ -158,7 +153,7 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
 
 ;; helpers
 (defun vc-got--program-version ()
-  "Return the version string of used `Got' command."
+  "Return string representing the got version."
   (let (process-file-side-effects)
     (with-temp-buffer
       (vc-got--call "-V")
@@ -181,23 +176,22 @@ Assume `default-directory' is inside a got worktree."
   (vc-got-with-worktree default-directory
     (with-temp-buffer
       (insert-file-contents ".got/repository")
-      (string-trim (buffer-string) nil "\n"))))
+      (string-trim (buffer-string) "" "\n"))))
 
 (defun vc-got--call (&rest args)
-  "Call `vc-got-program' in the `default-directory' with ARGS and put the output in the current buffer."
+  "Call `vc-got-program' with ARGS.
+The output will be placed in the current buffer."
   (apply #'process-file vc-got-program nil (current-buffer) nil
          (cl-remove-if #'null (flatten-list args))))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
   (with-temp-buffer
-    (apply #'vc-got--call "add" (append vc-register-switches files))))
+    (vc-got--call "add" vc-register-switches files)))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse)
-  "Execute the log command in the worktree of PATH.
-The output in the current buffer.
-
+  "Execute the log command in the worktree of PATH in the current buffer.
 LIMIT limits the maximum number of commit returned.
 
 START-COMMIT: start traversing history at the specified commit.
@@ -228,27 +222,28 @@ to report (e.g. \"CD\" to report only conflicts and deleted
 files)."
   (vc-got-with-worktree dir-or-file
     (with-temp-buffer
-      (when (zerop (vc-got--call "status"
-                                 (when status-codes (list "-s" status-codes))
-                                 (or files dir-or-file)))
-        (goto-char (point-min))
-        (cl-loop until (eobp)
-                 ;; the format of each line is
-                 ;; <status-char> <stage-char> <spc> <filename> \n
-                 collect (let* ((file-status (prog1 (vc-got--parse-status-char
-                                                     (char-after))
-                                               (forward-char)))
-                                (stage-status (prog1 (vc-got--parse-stage-char
-                                                      (char-after))
-                                                (forward-char)))
-                                (filename (progn
-                                            (forward-char)
-                                            (buffer-substring (point)
-                                                              (line-end-position)))))
-                           (list filename
-                                 (or file-status (and stage-status 'staged))
-                                 stage-status))
-                 do (forward-line))))))
+      (let (process-file-side-effects)
+        (when (zerop (vc-got--call "status"
+                                   (when status-codes (list "-s" status-codes))
+                                   (or files dir-or-file)))
+          (goto-char (point-min))
+          (cl-loop until (eobp)
+                   ;; the format of each line is
+                   ;; <status-char> <stage-char> <spc> <filename> \n
+                   collect (let* ((file-status (prog1 (vc-got--parse-status-char
+                                                       (char-after))
+                                                 (forward-char)))
+                                  (stage-status (prog1 (vc-got--parse-stage-char
+                                                        (char-after))
+                                                  (forward-char)))
+                                  (filename (progn
+                                              (forward-char)
+                                              (buffer-substring (point)
+                                                                (line-end-position)))))
+                             (list filename
+                                   (or file-status (and stage-status 'staged))
+                                   stage-status))
+                   do (forward-line)))))))
 
 (defun vc-got--parse-status-char (c)
   "Parse status char C into a symbol accepted by `vc-state'."
@@ -258,9 +253,9 @@ files)."
     (?D 'removed)
     (?C 'conflict)
     (?! 'missing)
-    (?~ 'edited) ;XXX: what does it means for a file to be ``obstructed''?
+    (?~ 'edited) ; XXX: what does it means for a file to be ``obstructed''?
     (?? 'unregistered)
-    (?m 'edited) ;modified file modes
+    (?m 'edited) ; modified file modes
     (?N nil)))
 
 (defun vc-got--parse-stage-char (c)
@@ -278,7 +273,7 @@ files)."
    collect (let* ((obj-start (point))
                   (_ (forward-word))
                   (obj (buffer-substring obj-start (point)))
-                  (_ (forward-char))         ;skip the space
+                  (_ (forward-char))         ; skip the space
                   (filename-start (point))
                   (_ (move-end-of-line nil))
                   (filename (buffer-substring filename-start (point))))
@@ -289,77 +284,86 @@ files)."
 
 (defun vc-got--tree (commit path)
   "Return an alist representing the got tree command output.
-The outputted tree will be localised for the given PATH at the
+The outputted tree will be localised in the given PATH at the
 given COMMIT."
   (vc-got-with-worktree path
-    (with-temp-buffer
-      (vc-got--call "tree" "-c" commit "-i" path)
-      (vc-got--tree-parse))))
+    (let (process-file-side-effects)
+      (with-temp-buffer
+        (when (zerop (vc-got--call "tree" "-c" commit "-i" path))
+          (vc-got--tree-parse))))))
 
 (defun vc-got--cat (commit obj-id)
   "Execute got cat -c COMMIT OBJ-ID in the current buffer."
-  (vc-got--call "cat" "-c" commit obj-id))
+  (let (process-file-side-effects)
+    (zerop (vc-got--call "cat" "-c" commit obj-id))))
 
 (defun vc-got--revert (&rest files)
-  "Execute got revert FILES..."
+  "Execute got revert FILES."
   (vc-got-with-worktree (car files)
     (with-temp-buffer
-      (apply #'vc-got--call "revert" files))))
+      (zerop (vc-got--call "revert" files)))))
 
 (defun vc-got--list-branches ()
   "Return an alist of (branch . commit)."
-  (with-temp-buffer
-    (when (zerop (vc-got--call "branch" "-l"))
-      (goto-char (point-min))
-      (cl-loop
-       until (= (point) (point-max))
-       ;; parse the `* $branchname: $commit', from the end
-       collect (let* ((_ (move-end-of-line nil))
-                      (end-commit (point))
-                      (_ (backward-word))
-                      (start-commit (point))
-                      (_ (backward-char 2))
-                      (end-branchname (point))
-                      (_ (move-beginning-of-line nil))
-                      (_ (forward-char 2))
-                      (start-branchname (point))
-                      (branchname (buffer-substring start-branchname end-branchname))
-                      (commit (buffer-substring start-commit end-commit)))
-                 (forward-line)
-                 (move-beginning-of-line nil)
-                 `(,branchname . ,commit))))))
+  (let (process-file-side-effects)
+    (with-temp-buffer
+      (when (zerop (vc-got--call "branch" "-l"))
+        (goto-char (point-min))
+        (cl-loop
+         until (= (point) (point-max))
+         ;; parse the `* $branchname: $commit', from the end
+         ;; XXX: use a regex?
+         collect (let* ((_ (move-end-of-line nil))
+                        (end-commit (point))
+                        (_ (backward-word))
+                        (start-commit (point))
+                        (_ (backward-char 2))
+                        (end-branchname (point))
+                        (_ (move-beginning-of-line nil))
+                        (_ (forward-char 2))
+                        (start-branchname (point))
+                        (branchname (buffer-substring start-branchname end-branchname))
+                        (commit (buffer-substring start-commit end-commit)))
+                   (forward-line)
+                   (move-beginning-of-line nil)
+                   `(,branchname . ,commit)))))))
 
 (defun vc-got--current-branch ()
   "Return the current branch."
-  (with-temp-buffer
-    (when (zerop (vc-got--call "branch"))
-      (string-trim (buffer-string) "" "\n"))))
+  (let (process-file-side-effects)
+    (with-temp-buffer
+      (when (zerop (vc-got--call "branch"))
+        (string-trim (buffer-string) "" "\n")))))
 
 (defun vc-got--integrate (branch)
   "Integrate BRANCH into the current one."
   (with-temp-buffer
-    (vc-got--call "integrate" branch)))
+    (zerop (vc-got--call "integrate" branch))))
 
 (defun vc-got--diff (&rest args)
   "Call got diff with ARGS.  The result will be stored in the current buffer."
-  (apply #'vc-got--call "diff"
-         (append (vc-switches 'got 'diff)
-                 (mapcar #'file-relative-name args))))
+  (let (process-file-side-effects)
+    (zerop (vc-got--call "diff"
+                         (vc-switches 'got 'diff)
+                         (mapcar #'file-relative-name args)))))
 
 (defun vc-got--unstage (file-or-directory)
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
 If it's nil, unstage every staged changes across the entire work
 tree."
-  (vc-got--call "unstage" file-or-directory))
+  (zerop (vc-got--call "unstage" file-or-directory)))
 
 (defun vc-got--remove (file &optional force keep-local)
-  "Internal helper to removing FILE from got."
+  "Use got to remove FILE.
+If FORCE is non-nil perform the operation even if a file contains
+local modification.  If KEEP-LOCAL is non-nil keep the affected
+files on disk."
   (vc-got-with-worktree (or file default-directory)
     (with-temp-buffer
-      (vc-got--call "remove"
-                    (when force "-f")
-                    (when keep-local "-k")
-                    file))))
+      (zerop (vc-got--call "remove"
+                           (when force "-f")
+                           (when keep-local "-k")
+                           file)))))
 
 
 ;; Backend properties
@@ -384,7 +388,7 @@ tree."
 (defun vc-got-registered (file)
   "Return non-nil if FILE is registered with got."
   (if (file-directory-p file)
-      nil                               ;got doesn't track directories
+      nil                               ; got doesn't track directories
     (when (vc-find-root file ".got")
       (let ((s (vc-got-state file)))
         (not (or (eq s 'unregistered)
@@ -393,52 +397,54 @@ tree."
 (defun vc-got-state (file)
   "Return the current version control state of FILE.  See `vc-state'."
   (unless (file-directory-p file)
-    ;; Manually calling got status and checking the result inline to
-    ;; avoid building the data structure in vc-got--status.
-    (with-temp-buffer
-      (when (zerop (vc-got--call "status" file))
-        (goto-char (point-min))
-        (if (eobp)
-            'up-to-date
-          (vc-got--parse-status-char (char-after)))))))
+    (let (process-file-side-effects)
+      ;; Manually calling got status and checking the result inline to
+      ;; avoid building the data structure in vc-got--status.
+      (with-temp-buffer
+        (when (zerop (vc-got--call "status" file))
+          (goto-char (point-min))
+          (if (eobp)
+              'up-to-date
+            (vc-got--parse-status-char (char-after))))))))
 
 (defun vc-got-dir-status-files (dir files update-function)
   "Build the status for FILES in DIR.
-The builded result is given to the callback UPDATE-FUNCTIONS.  If
+The builded result is given to the callback UPDATE-FUNCTION.  If
 FILES is nil, consider all the files in DIR."
   (let* ((fs (seq-filter (lambda (file)
                            (and (not (string= file ".."))
                                 (not (string= file "."))
                                 (not (string= file ".got"))))
-                         (or files
-                             (directory-files dir))))
+                         (or files (directory-files dir))))
          (res (vc-got--status nil dir files)))
     (cl-loop for file in fs
-             do (let ((s (unless (or (cdr (assoc file res #'string=))
-                                     (file-directory-p file))
-                           (when (file-exists-p file)
-                             ;; if file doesn't exists, it's a
-                             ;; untracked file that was removed.
-                             (list file 'up-to-date nil)))))
-                  (when s
-                    (push s res)))
+             do (when (and (not (cdr (assoc file res #'string=)))
+                           (not (file-directory-p file))
+                           ;; if file doesn't exists, it's a
+                           ;; untracked file that was removed.
+                           (file-exists-p file))
+                  (push (list file 'up-to-date nil)
+                        res))
              finally (funcall update-function res nil))))
 
 (defun vc-got-dir-extra-headers (dir)
   "Return a string for the `vc-dir' buffer heading for directory DIR."
-  (concat (propertize "Repository : " 'face 'font-lock-type-face)
-          (vc-got--repo-root) "\n"
-          (propertize "Remote URL : " 'face 'font-lock-type-face)
-          (vc-got-repository-url dir) "\n"
-          (propertize "Branch     : " 'face 'font-lock-type-face)
-          (vc-got--current-branch)))
+  (let ((remote (vc-got-repository-url dir)))
+    (concat (propertize "Repository : " 'face 'font-lock-type-face)
+            (vc-got--repo-root) "\n"
+            (when remote
+              (concat
+               (propertize "Remote URL : " 'face 'font-lock-type-face)
+               (vc-got-repository-url dir) "\n"))
+            (propertize "Branch     : " 'face 'font-lock-type-face)
+            (vc-got--current-branch))))
 
 (defun vc-got-dir-printer (info)
   "Pretty-printer for the vc-dir-fileinfo structure INFO."
   (let* ((isdir (vc-dir-fileinfo->directory info))
-	 (state (if isdir "" (vc-dir-fileinfo->state info)))
-	 (stage-state (vc-dir-fileinfo->extra info))
-	 (filename (vc-dir-fileinfo->name info)))
+         (state (if isdir "" (vc-dir-fileinfo->state info)))
+         (stage-state (vc-dir-fileinfo->extra info))
+         (filename (vc-dir-fileinfo->name info)))
     (insert
      (propertize
       (format "%c" (if (vc-dir-fileinfo->marked info) ?* ? ))
@@ -446,18 +452,18 @@ FILES is nil, consider all the files in DIR."
      " "
      (propertize
       (if stage-state
-	  (format "staged:%-6s" stage-state)
-	(format "%-13s" ""))
+          (format "staged:%-6s" stage-state)
+        (format "%-13s" ""))
       'face (cond ((memq stage-state '(add edit)) 'font-lock-constant-face)
-		  ((eq stage-state 'remove) 'font-lock-warning-face)
-		  (t 'font-lock-variable-name-face)))
+                  ((eq stage-state 'remove) 'font-lock-warning-face)
+                  (t 'font-lock-variable-name-face)))
      " "
      (propertize
       (format "%-14s" state)
       'face (cond ((eq state 'up-to-date) 'font-lock-builtin-face)
-		  ((memq state '(missing conflict)) 'font-lock-warning-face)
-		  ((eq state 'edited) 'font-lock-constant-face)
-		  (t 'font-lock-variable-name-face))
+                  ((memq state '(missing conflict)) 'font-lock-warning-face)
+                  ((eq state 'edited) 'font-lock-constant-face)
+                  (t 'font-lock-variable-name-face))
       'mouse-face 'highlight)
      " "
      (propertize
@@ -466,8 +472,8 @@ FILES is nil, consider all the files in DIR."
       (if isdir 'font-lock-comment-delimiter-face 'font-lock-function-name-face)
       'help-echo
       (if isdir
-	  "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
-	"File\nmouse-3: Pop-up menu")
+          "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
+        "File\nmouse-3: Pop-up menu")
       'mouse-face 'highlight
       'keymap vc-dir-filename-mouse-map))))
 
@@ -478,11 +484,11 @@ FILES is nil, consider all the files in DIR."
      (when (vc-got--log file 1)
        (let (start)
          (goto-char (point-min))
-         (forward-line 1)               ;skip the ----- line
-         (forward-word)                 ;skip "commit"
-         (forward-char)                 ;skip the space
-         (setq start (point))           ;store start of the SHA
-         (forward-word)                 ;goto SHA end
+         (forward-line 1)               ; skip the ----- line
+         (forward-word)                 ; skip "commit"
+         (forward-char)                 ; skip the space
+         (setq start (point))           ; store start of the SHA
+         (forward-word)                 ; goto SHA end
          (buffer-substring start (point)))))
    ;; special case: if this file is added but has no previous commits
    ;; touching it, got log will fail (as expected), but we have to
@@ -518,12 +524,12 @@ FILES is nil, consider all the files in DIR."
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
-    (apply #'vc-got--call "commit" "-m"
-           ;; emacs add ``Summary:'' at the start of the commit
-           ;; message.  vc-git doesn't seem to treat this specially.
-           ;; Since it's annoying, remove it.
-           (string-remove-prefix "Summary: " comment)
-           files)))
+    (vc-got--call "commit" "-m"
+                  ;; emacs add ``Summary:'' at the start of the commit
+                  ;; message.  vc-git doesn't seem to treat this specially.
+                  ;; Since it's annoying, remove it.
+                  (string-remove-prefix "Summary: " comment)
+                  files)))
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
@@ -538,7 +544,8 @@ FILES is nil, consider all the files in DIR."
                     (vc-got-root file)))
 
 (defun vc-got-checkout (_file &optional _rev)
-  "Checkout revision REV of FILE.  If REV is t, checkout from the head."
+  "Checkout revision REV of FILE.
+If REV is t, checkout from the head."
   (error "vc got: checkout not implemented"))
 
 (defun vc-got-revert (file &optional _content-done)
@@ -579,8 +586,8 @@ If PROMPT is non-nil, prompt for the git command to run."
 
 (defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
   "Insert the revision log for FILES into BUFFER.
-
-LIMIT limits the number of commits, optionally starting at START-REVISION."
+LIMIT limits the number of commits, optionally starting at
+START-REVISION."
   (with-current-buffer buffer
     ;; the *vc-diff* may be read only
     (let ((inhibit-read-only t))
@@ -635,9 +642,9 @@ LIMIT limits the number of commits, optionally starting at START-REVISION."
       ;; by got unless vc-parent-buffer points to a buffer managed by got.
       ;; investigate why this is needed.
       (set (make-local-variable 'vc-parent-buffer) (find-file-noselect file))
-      (apply #'vc-got--call "blame" (if rev
-                                        (list "-c" rev file)
-                                      (list file))))))
+      (vc-got--call "blame"
+                    (when rev (list "-c" rev))
+                    file))))
 
 (defconst vc-got--annotate-re
   (concat "^[0-9]\\{1,\\}) " ; line number followed by )
@@ -691,7 +698,7 @@ Value is returned as floating point fractional number of days."
     (vc-got--log file nil nil rev)
     (keep-lines "^commit" (point-min) (point-max))
     (goto-char (point-max))
-    (forward-line -1) ;; return from empty line to last actual commit
+    (forward-line -1)    ; return from empty line to last actual commit
     (unless (= (point) (point-min))
       (forward-line -1)
       (when (looking-at vc-got--commit-re)
@@ -706,8 +713,6 @@ Value is returned as floating point fractional number of days."
   (let* ((root (vc-got-root dir))
          (default-directory root)
          (process-file-side-effects))
-    ;; for got it doesn't matter where we call "got status", it will
-    ;; always report file paths from the root of the repo.
     (cl-loop with conflicts = nil
              for (file status _) in (vc-got--status "C" ".")
              do (when (and (eq status 'conflict)
@@ -720,12 +725,9 @@ Value is returned as floating point fractional number of days."
   (let* ((default-directory (vc-got--repo-root))
          (remote-name (or remote-name "origin"))
          (heading (concat "[remote \"" remote-name "\"]"))
-         (conf (cond ((file-exists-p ".git/config")
-                      ".git/config")
-                     ((file-exists-p ".git")
-                      nil)
-                     ((file-exists-p "config")
-                      "config")))
+         (conf (cond ((file-exists-p ".git/config") ".git/config")
+                     ((file-exists-p ".git")        nil)
+                     ((file-exists-p "config")      "config")))
          found)
     (when conf
       (with-temp-buffer
@@ -734,7 +736,7 @@ Value is returned as floating point fractional number of days."
         (when (search-forward heading nil t)
           (forward-line)
           (while (and (not found)
-                      (looking-at ".*=") ;too broad?
+                      (looking-at ".*=") ; too broad?
                       (not (= (point) (point-max))))
             (when (looking-at ".*url = \\(.*\\)")
               (setq found (match-string-no-properties 1)))
@@ -745,7 +747,7 @@ Value is returned as floating point fractional number of days."
 ;; hacks
 (defun vc-got-fix-dir-move-to-goal-column (fn)
   "Move the cursor on the file column.
-Adviced around vc-dir-move-to-goal-column because it hardcodes column 25."
+Adviced around `vc-dir-move-to-goal-column' (FN) because it hardcodes column 25."
   (if (not (vc-find-root default-directory ".got"))
       (funcall fn)
     (beginning-of-line)
