@@ -107,7 +107,10 @@ PROC is the process, STRING part of its output."
               (let ((msg (match-string 1)))
                 (kill-line)             ; kill the question
                 (vc-got-stage--kill-separators)
-                (process-send-string buf (if (y-or-n-p msg) "y\n" "n\n"))
+                (process-send-string buf
+                                     (condition-case nil
+                                         (if (y-or-n-p msg) "y\n" "n\n")
+                                       (quit "q\n")))
                 (erase-buffer)))))))))
 
 (defun vc-got-stage--sentinel (_proc event)
