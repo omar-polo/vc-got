@@ -435,8 +435,9 @@ FILES is nil, consider all the files in DIR."
                   ;; either up-to-date or ignored.  Save it for a
                   ;; double check
                   (push file double-check)))
-    (cl-loop for (file status _) in (vc-got--status nil dir double-check)
-             unless (eq status 'unregistered)
+    (cl-loop with statuses = (vc-got--status nil dir double-check)
+             for file in double-check
+             unless (eq 'unregistered (cadr (assoc file statuses #'string=)))
              do (push (list file 'up-to-date nil) res))
     (funcall update-function res nil)))
 
