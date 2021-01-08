@@ -420,16 +420,25 @@ files on disk."
 The builded result is given to the callback UPDATE-FUNCTION.  If
 FILES is nil, consider all the files in DIR."
   (let* ((fs (vc-got--dir-filter-files (or files (directory-files dir))))
-         (res (vc-got--status nil dir files)))
+         ;; XXX: we call with files, wich will probably be nil on the
+         ;; first run, so we catch deleted, missing and edited files
+         ;; in subdirectories.
+         (res (vc-got--status nil dir files))
+         double-check)
     (cl-loop for file in fs
              do (when (and (not (cdr (assoc file res #'string=)))
                            (not (file-directory-p file))
                            ;; if file doesn't exists, it's a
                            ;; untracked file that was removed.
                            (file-exists-p file))
-                  (push (list file 'up-to-date nil)
-                        res))
-             finally (funcall update-function res nil))))
+                  ;; if we don't know the status of a file here, it's
+                  ;; either up-to-date or ignored.  Save it for a
+                  ;; double check
+                  (push file double-check)))
+    (cl-loop for (file status _) in (vc-got--status nil dir double-check)
+             unless (eq status 'unregistered)
+             do (push (list file 'up-to-date nil) res))
+    (funcall update-function res nil)))
 
 (defun vc-got-dir-extra-headers (dir)
   "Return a string for the `vc-dir' buffer heading for directory DIR."
