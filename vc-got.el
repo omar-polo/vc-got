@@ -407,15 +407,19 @@ files on disk."
               'up-to-date
             (vc-got--parse-status-char (char-after))))))))
 
+(defun vc-got--dir-filter-files (files)
+  "Remove ., .. and .got from FILES."
+  (cl-loop for file in files
+           unless (or (string= file "..")
+                      (string= file ".")
+                      (string= file ".got"))
+           collect file))
+
 (defun vc-got-dir-status-files (dir files update-function)
   "Build the status for FILES in DIR.
 The builded result is given to the callback UPDATE-FUNCTION.  If
 FILES is nil, consider all the files in DIR."
-  (let* ((fs (seq-filter (lambda (file)
-                           (and (not (string= file ".."))
-                                (not (string= file "."))
-                                (not (string= file ".got"))))
-                         (or files (directory-files dir))))
+  (let* ((fs (vc-got--dir-filter-files (or files (directory-files dir))))
          (res (vc-got--status nil dir files)))
     (cl-loop for file in fs
              do (when (and (not (cdr (assoc file res #'string=)))
