@@ -67,7 +67,7 @@ and an example of the interactive stage operation with
 ## Contributing
 
 The long-term plan is to get this into Emacs.  This means that to
-avoid possible problem, a GNU copyright assignment is required.  It's
+avoid possible problems, a GNU copyright assignment is required.  It's
 really easy to get one (just send an email), and having one will allow
 you to make further contribution to Emacs itself or to various
 other packages.
