@@ -575,28 +575,40 @@ If REV is t, checkout from the head."
     (when branch
       (vc-got--integrate branch))))
 
-(defun vc-got--push-pull (cmd op prompt root)
-  "Execute CMD OP, or prompt the user if PROMPT is non-nil.
-ROOT is the worktree root."
-  (let ((buffer (format "*vc-got : %s*" (expand-file-name root))))
+(defun vc-got--push-pull (cmd op prompt)
+  "Execute CMD OP, or prompt the user if PROMPT is non-nil."
+  (let ((buffer (format "*vc-got : %s*" (expand-file-name default-directory))))
     (when-let (cmd (if prompt
                        (split-string
                         (read-shell-command (format "%s %s command: " cmd op)
                                             (format "%s %s" cmd op))
                         " " t)
                      (list cmd op)))
-      (apply #'vc-do-command buffer 0 (car cmd) nil (cdr cmd)))))
+      (apply #'vc-do-async-command buffer default-directory cmd)
+      ;; this comes from vc-git.el.  We're using git to push, so in
+      ;; part it makes sense, but we should revisit for full Got
+      ;; support.
+      (with-current-buffer buffer
+        (vc-compilation-mode 'git)
+        (let ((comp-cmd (mapconcat #'identity cmd " ")))
+          (setq-local compile-command comp-cmd
+                      compilation-directory default-directory
+                      compilation-arguments (list comp-cmd
+                                                  nil
+                                                  (lambda (_ign) buffer)
+                                                  nil))))
+      (vc-set-async-update buffer))))
 
 (defun vc-got-pull (prompt)
   "Execute got pull, prompting the user for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-program "fetch" prompt (vc-got-root default-directory)))
+  (let ((default-directory (vc-got-root default-directory)))
+    (vc-got--push-pull vc-got-program "fetch" prompt)))
 
 (defun vc-got-push (prompt)
   "Run git push (not got!) in the repository dir.
 If PROMPT is non-nil, prompt for the git command to run."
-  (let* ((root (vc-got-root default-directory))
-         (default-directory (vc-got--repo-root)))
-    (vc-got--push-pull "git" "push" prompt root)))
+  (let ((default-directory (vc-got--repo-root)))
+    (vc-got--push-pull "git" "push" prompt)))
 
 (defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
   "Insert the revision log for FILES into BUFFER.
