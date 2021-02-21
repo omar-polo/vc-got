@@ -212,7 +212,7 @@ worktree."
                      (when reverse '("-R"))
                      path)))))
 
-(defun vc-got--status (status-codes dir-or-file &rest files)
+(defun vc-got--status (status-codes dir-or-file files)
   "Return a list of lists '(FILE STATUS STAGE-STATUS).
 DIR-OR-FILE can be either a directory or a file.  If FILES is
 given, return the status of those files, otherwise the status of
@@ -220,30 +220,35 @@ DIR-OR-FILE.  STATUS-CODES is either nil, or a string that's
 passed as the -s flag to got status to limit the types of status
 to report (e.g. \"CD\" to report only conflicts and deleted
 files)."
-  (vc-got-with-worktree dir-or-file
-    (with-temp-buffer
-      (let (process-file-side-effects)
-        (when (zerop (vc-got--call "status"
-                                   (when status-codes (list "-s" status-codes))
-                                   (or files dir-or-file)))
-          (goto-char (point-min))
-          (cl-loop until (eobp)
-                   ;; the format of each line is
-                   ;; <status-char> <stage-char> <spc> <filename> \n
-                   collect (let* ((file-status (prog1 (vc-got--parse-status-char
-                                                       (char-after))
-                                                 (forward-char)))
-                                  (stage-status (prog1 (vc-got--parse-stage-char
-                                                        (char-after))
-                                                  (forward-char)))
-                                  (filename (progn
-                                              (forward-char)
-                                              (buffer-substring (point)
-                                                                (line-end-position)))))
-                             (list filename
-                                   (or file-status (and stage-status 'staged))
-                                   stage-status))
-                   do (forward-line)))))))
+  (with-temp-buffer
+    (let* ((default-directory (expand-file-name
+                               (if (file-directory-p dir-or-file)
+                                   dir-or-file
+                                 (file-name-directory dir-or-file))))
+           (root (vc-got-root default-directory))
+           (process-file-side-effects))
+      (when (zerop (vc-got--call "status"
+                                 (when status-codes (list "-s" status-codes))
+                                 (or files dir-or-file)))
+        (goto-char (point-min))
+        (cl-loop until (eobp)
+                 ;; the format of each line is
+                 ;; <status-char> <stage-char> <spc> <filename> \n
+                 collect (let* ((file-status (prog1 (vc-got--parse-status-char
+                                                     (char-after))
+                                               (forward-char)))
+                                (stage-status (prog1 (vc-got--parse-stage-char
+                                                      (char-after))
+                                                (forward-char)))
+                                (filename (progn
+                                            (forward-char)
+                                            (buffer-substring (point)
+                                                              (line-end-position)))))
+                           (list (file-relative-name (expand-file-name filename root)
+                                                     default-directory)
+                                 (or file-status (and stage-status 'staged))
+                                 stage-status))
+                 do (forward-line))))))
 
 (defun vc-got--parse-status-char (c)
   "Parse status char C into a symbol accepted by `vc-state'."
