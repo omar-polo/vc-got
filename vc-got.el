@@ -212,7 +212,7 @@ worktree."
                      (when reverse '("-R"))
                      path)))))
 
-(defun vc-got--status (status-codes dir-or-file files)
+(defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists '(FILE STATUS STAGE-STATUS).
 DIR-OR-FILE can be either a directory or a file.  If FILES is
 given, return the status of those files, otherwise the status of
