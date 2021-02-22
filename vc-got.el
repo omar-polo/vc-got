@@ -73,7 +73,7 @@
 ;; * log-outgoing                       DONE
 ;; * log-incoming                       DONE
 ;; - log-search                         DONE
-;; - log-view-mode                      NOT IMPLEMENTED
+;; - log-view-mode                      DONE
 ;; - show-log-entry                     NOT IMPLEMENTED
 ;; - comment-history                    NOT IMPLEMENTED
 ;; - update-changelog                   NOT IMPLEMENTED
@@ -203,14 +203,18 @@ Return nil if the command failed or if PATH isn't included in any
 worktree."
   (let (process-file-side-effects)
     (vc-got-with-worktree (or path default-directory)
-      (zerop
-       (vc-got--call "log"
-                     (when limit (list "-l" (format "%s" limit)))
-                     (when start-commit (list "-c" start-commit))
-                     (when stop-commit (list "-x" stop-commit))
-                     (when search-pattern (list "-s" search-pattern))
-                     (when reverse '("-R"))
-                     path)))))
+      (when (zerop
+             (save-excursion
+               (vc-got--call "log"
+                             (when limit (list "-l" (format "%s" limit)))
+                             (when start-commit (list "-c" start-commit))
+                             (when stop-commit (list "-x" stop-commit))
+                             (when search-pattern (list "-s" search-pattern))
+                             (when reverse '("-R"))
+                             path)))
+        (save-excursion
+          (delete-matching-lines "^-----------------------------------------------$")
+          t)))))
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists '(FILE STATUS STAGE-STATUS).
@@ -650,6 +654,29 @@ START-REVISION."
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
       (vc-got--log nil nil nil nil pattern))))
+
+(define-derived-mode vc-got-log-view-mode log-view-mode "Got-Log-View"
+  "Got-specific log-view mode.
+Heavily inspired by `vc-git-log-view-mode'."
+  (require 'add-log)
+  (setq-local
+   log-view-file-re regexp-unmatchable
+   log-view-per-file-logs nil
+   log-view-message-re "^commit +\\([0-9a-z]+\\)"
+
+   log-view-font-lock-keywords
+   (append
+    `((,log-view-message-re (1 'change-log-acknowledgment)))
+    ;; Handle the case:
+    ;; user: foo@bar
+    '(("^from: \\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)"
+       (1 'change-log-email))
+      ;; Handle the case:
+      ;; user: FirstName LastName <foo@bar>
+      ("^from: \\([^<(]+?\\)[ \t]*[(<]\\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)[>)]"
+       (1 'change-log-name)
+       (2 'change-log-email))
+      ("^date: \\(.+\\)" (1 'change-log-date))))))
 
 ;; TODO: async
 ;; TODO: return 0 or 1
