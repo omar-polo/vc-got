@@ -547,12 +547,13 @@ FILES is nil, consider all the files in DIR."
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
-    (vc-got--call "commit" "-m"
-                  ;; emacs add ``Summary:'' at the start of the commit
-                  ;; message.  vc-git doesn't seem to treat this specially.
-                  ;; Since it's annoying, remove it.
-                  (string-remove-prefix "Summary: " comment)
-                  files)))
+    (unless (zerop (vc-got--call "commit" "-m"
+                                 ;; emacs add ``Summary:'' at the start of the commit
+                                 ;; message.  vc-git doesn't seem to treat this specially.
+                                 ;; Since it's annoying, remove it.
+                                 (string-remove-prefix "Summary: " comment)
+                                 files))
+      (error (buffer-string)))))
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
