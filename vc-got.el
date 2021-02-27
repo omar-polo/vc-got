@@ -507,7 +507,6 @@ FILES is nil, consider all the files in DIR."
      (when (vc-got--log file 1)
        (let (start)
          (goto-char (point-min))
-         (forward-line 1)               ; skip the ----- line
          (forward-word)                 ; skip "commit"
          (forward-char)                 ; skip the space
          (setq start (point))           ; store start of the SHA
