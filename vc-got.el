@@ -590,7 +590,7 @@ If REV is t, checkout from the head."
     (when-let (cmd (if prompt
                        (split-string
                         (read-shell-command (format "%s %s command: " cmd op)
-                                            (format "%s %s" cmd op))
+                                            (format "%s %s " cmd op))
                         " " t)
                      (list cmd op)))
       (apply #'vc-do-async-command buffer default-directory cmd)
