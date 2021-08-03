@@ -608,6 +608,17 @@ If REV is t, checkout from the head."
                                                   nil))))
       (vc-set-async-update buffer))))
 
+;; TODO: this can be expanded.  See whan omyksh does:
+;; function got-sync {
+;; 	local _remote _info _branch
+;; 	_remote=$1
+;; 	_info="$(got info)"
+;; 	_branch="$(echo "$_info" | awk '/branch reference:/ {l = split($NF, a, "/"); print a[l]}')"
+;; 	[ -z $_remote ] && _remote="origin"
+;; 	[ -z $_branch ] && _branch="main"
+;; 	got fetch "$_remote" && got update -b "$_remote/$_branch" && \
+;; 		got rebase $_branch
+;; }
 (defun vc-got-pull (prompt)
   "Execute got pull, prompting the user for the full command if PROMPT is not nil."
   (let ((default-directory (vc-got-root default-directory)))
