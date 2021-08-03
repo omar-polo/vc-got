@@ -102,7 +102,7 @@
 ;; - check-headers                      NOT NEEDED, `got' does not use headers
 ;; - delete-file                        DONE
 ;; - rename-file                        NOT NEEDED, `delete' + `register' is enough
-;; - find-file-hook                     NOT NEEDED, no need for hooks yet
+;; - find-file-hook                     DONE
 ;; - extra-menu                         NOT IMPLEMENTED, add `import', `integrate', `stage'?
 ;; - extra-dir-menu                     NOT IMPLEMENTED, same as above
 ;; - conflicted-files                   DONE
@@ -765,6 +765,17 @@ Value is returned as floating point fractional number of days."
 (defun vc-got-delete-file (file)
   "Delete FILE locally and mark it deleted in work tree."
   (vc-got--remove file t))
+
+(defun vc-got-find-file-hook ()
+  "Activate `smerge-mode' if there is a conflict."
+  ;; just like vc-git-find-file-hook
+  (when (and buffer-file-name
+             (eq (vc-state buffer-file-name 'Got) 'conflict)
+             (save-excursion
+               (goto-char (point-min))
+               (re-search-forward "^<<<<<<< " nil 'noerror)))
+    (smerge-start-session)
+    (vc-message-unresolved-conflicts buffer-file-name)))
 
 (defun vc-got-conflicted-files (dir)
   "Return the list of files with conflicts in directory DIR."
