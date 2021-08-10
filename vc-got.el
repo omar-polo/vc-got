@@ -18,7 +18,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;;; Commentary
+;;; Commentary:
 
 ;; Backend implementation status
 ;;
@@ -532,7 +532,8 @@ FILES is nil, consider all the files in DIR."
 ;; state-changing functions
 
 (defun vc-got-create-repo (_backend)
-  (error "vc got: create-repo not implemented"))
+  "Create an empty repository in the current directory."
+  (error "[vc-got] create-repo not implemented"))
 
 (defun vc-got-register (files &optional _comment)
   "Register FILES, passing `vc-register-switches' to the backend command."
@@ -569,7 +570,7 @@ FILES is nil, consider all the files in DIR."
 (defun vc-got-checkout (_file &optional _rev)
   "Checkout revision REV of FILE.
 If REV is t, checkout from the head."
-  (error "vc got: checkout not implemented"))
+  (error "[vc-got] checkout not implemented"))
 
 (defun vc-got-revert (file &optional _content-done)
   "Revert FILE back to working revision."
