@@ -89,7 +89,9 @@
 ;; - mergebase                          NOT IMPLEMENTED
 ;;
 ;; TAG SYSTEM
-;; - create-tag                         NOT IMPLEMENTED
+;; - create-tag                         PARTIALLY IMPLEMENTED
+;;      figure out how to read a message for the tag; can only create
+;;      branches.
 ;; - retrieve-tag                       NOT IMPLEMENTED
 ;;
 ;; MISCELLANEOUS                        NOT IMPLEMENTED
@@ -389,6 +391,16 @@ files on disk."
           (while (re-search-forward re nil t)
             (push (match-string 2) table))
           table)))))
+
+(defun vc-got--branch (name)
+  "Try to create and switch to the branch called NAME."
+  (let (process-file-side-effects)
+    (vc-got-with-worktree default-directory
+      (with-temp-buffer
+        (if (zerop (vc-got--call "branch" name))
+            t
+          (error "[vc-got] can't create branch %s: %s" name
+                 (buffer-string)))))))
 
 
 ;; Backend properties
@@ -783,6 +795,19 @@ Value is returned as floating point fractional number of days."
     (beginning-of-line)
     (when (looking-at vc-got--annotate-re)
       (match-string-no-properties 1))))
+
+
+;; Tag system
+
+(defun vc-got-create-tag (_dir name branchp)
+  "Attach the tag NAME to the state of the worktree.
+DIR is ignored (tags are global, not per-file).
+If BRANCHP is true, NAME should create a new branch."
+  ;; TODO: vc reccomends to ensure that all the file are in a clean
+  ;; state, but is it useful?
+  (if branchp
+      (vc-got--branch name)
+    (error "[vc-got] create tags is not implemented (yet)")))
 
 
 ;; Miscellaneous
