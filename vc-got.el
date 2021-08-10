@@ -78,7 +78,7 @@
 ;; - comment-history                    NOT IMPLEMENTED
 ;; - update-changelog                   NOT IMPLEMENTED
 ;; * diff                               DONE
-;; - revision-completion-table          NOT IMPLEMENTED
+;; - revision-completion-table          DONE
 ;; - annotate-command                   DONE
 ;; - annotate-time                      DONE
 ;; - annotate-current-time              NOT IMPLEMENTED
@@ -373,6 +373,21 @@ files on disk."
                            (when force "-f")
                            (when keep-local "-k")
                            file)))))
+
+(defun vc-got--ref ()
+  "Return a list of all references."
+  (let (process-file-side-effects
+        (re "^refs/\\(heads\\|remotes\\|tags\\)/\\(.*\\):")
+        ;; hardcoding HEAD because it's always present and the regexp
+        ;; won't match it.
+        (table (list "HEAD")))
+    (vc-got-with-worktree default-directory
+      (with-temp-buffer
+        (when (zerop (vc-got--call "ref" "-l"))
+          (goto-char (point-min))
+          (while (re-search-forward re nil t)
+            (push (match-string 2) table))
+          table)))))
 
 
 ;; Backend properties
@@ -707,6 +722,14 @@ Heavily inspired by `vc-git-log-view-mode'."
           ;; TODO: if rev2 is nil as well, diff against an empty tree
           ;; (i.e. get the patch from `got log -p rev1')
           (vc-got--diff rev1 rev2))))))
+
+(defun vc-got-revision-completion-table (_files)
+  "Return a completion table for existing revisions.
+Ignores FILES because GoT doesn't have the concept of ``file
+revisions''; instead, like with git, you have tags and branches."
+  (letrec ((table (lazy-completion-table
+                   table (lambda () (vc-got--ref)))))
+    table))
 
 (defun vc-got-annotate-command (file buf &optional rev)
   "Show annotated contents of FILE in buffer BUF.  If given, use revision REV."
