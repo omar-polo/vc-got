@@ -698,11 +698,15 @@ Heavily inspired by `vc-git-log-view-mode'."
          (inhibit-read-only t))
     (with-current-buffer buffer
       (vc-got-with-worktree (car files)
-        (cond ((and (null rev1)
-                    (null rev2))
-               (dolist (file files)
-                 (vc-got--diff file)))
-              (t (error "Not implemented")))))))
+        (if (and (null rev1)
+                 (null rev2))
+            (dolist (file files)
+              (vc-got--diff file))
+          ;; TODO: if rev1 is nil, diff from the current version until
+          ;; rev2.
+          ;; TODO: if rev2 is nil as well, diff against an empty tree
+          ;; (i.e. get the patch from `got log -p rev1')
+          (vc-got--diff rev1 rev2))))))
 
 (defun vc-got-annotate-command (file buf &optional rev)
   "Show annotated contents of FILE in buffer BUF.  If given, use revision REV."
