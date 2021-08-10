@@ -81,7 +81,8 @@
 ;; - revision-completion-table          DONE
 ;; - annotate-command                   DONE
 ;; - annotate-time                      DONE
-;; - annotate-current-time              NOT IMPLEMENTED
+;; - annotate-current-time              NOT NEEDED
+;;      the default time handling is enough.
 ;; - annotate-extract-revision-at-line  DONE
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
@@ -646,6 +647,9 @@ If PROMPT is non-nil, prompt for the git command to run."
   (let ((default-directory (vc-got--repo-root)))
     (vc-got--push-pull "git" "push" prompt)))
 
+
+;; History functions
+
 (defun vc-got-print-log (files buffer &optional _shortlog start-revision limit)
   "Insert the revision log for FILES into BUFFER.
 LIMIT limits the number of commits, optionally starting at
@@ -779,6 +783,9 @@ Value is returned as floating point fractional number of days."
     (beginning-of-line)
     (when (looking-at vc-got--annotate-re)
       (match-string-no-properties 1))))
+
+
+;; Miscellaneous
 
 (defun vc-got-previous-revision (file rev)
   "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
