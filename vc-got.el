@@ -569,9 +569,7 @@ FILES is nil, consider all the files in DIR."
 
 (defun vc-got-unregister (file)
   "Unregister FILE."
-  (with-temp-buffer
-    (unless (zerop (vc-got--call "remove" "-fk" "--" file))
-      (error "[vc-got] can't unregister %s: %s" file (buffer-string)))))
+  (vc-got--remove file t t))
 
 ;; XXX: generally speaking, files cannot be nil.  But we have to
 ;; handle that case too, because vc-got-stage-commit will call
