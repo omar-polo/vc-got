@@ -574,10 +574,7 @@ FILES is nil, consider all the files in DIR."
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
     (unless (zerop (vc-got--call "commit" "-m"
-                                 ;; emacs add ``Summary:'' at the start of the commit
-                                 ;; message.  vc-git doesn't seem to treat this specially.
-                                 ;; Since it's annoying, remove it.
-                                 (string-remove-prefix "Summary: " comment)
+                                 (log-edit-extract-headers nil comment)
                                  files))
       (error (buffer-string)))))
 
