@@ -721,7 +721,8 @@ Heavily inspired by `vc-git-log-view-mode'."
   (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
     (with-current-buffer buffer
-      (vc-got-with-worktree (car files)
+      (vc-got-with-worktree (or (car files)
+                                default-directory)
         (if (and (null rev1)
                  (null rev2))
             (dolist (file files)
