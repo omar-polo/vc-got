@@ -95,8 +95,8 @@
 ;; MISCELLANEOUS                        NOT IMPLEMENTED
 ;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
 ;; - root                               DONE
-;; - ignore                             NOT IMPLEMENTED
-;; - ignore-completion-table            NOT IMPLEMENTED
+;; - ignore                             NOT NEEDED, the default action is good
+;; - ignore-completion-table            NOT NEEDED, the default action is good
 ;; - find-ignore-file                   DONE
 ;; - previous-revision                  DONE
 ;; - next-revision                      DONE
