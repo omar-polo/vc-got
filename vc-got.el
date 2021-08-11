@@ -89,9 +89,7 @@
 ;; - mergebase                          NOT IMPLEMENTED
 ;;
 ;; TAG SYSTEM
-;; - create-tag                         PARTIALLY IMPLEMENTED
-;;      figure out how to read a message for the tag; can only create
-;;      branches.
+;; - create-tag                         DONE
 ;; - retrieve-tag                       NOT IMPLEMENTED
 ;;
 ;; MISCELLANEOUS                        NOT IMPLEMENTED
@@ -799,15 +797,34 @@ Value is returned as floating point fractional number of days."
 
 ;; Tag system
 
+(defun vc-got--tag-callback (tag)
+  "`log-edit' callback for `vc-got-create-tag'.
+Creates the TAG using the content of the current buffer."
+  (interactive)
+  (let ((msg (buffer-substring-no-properties (point-min)
+                                             (point-max))))
+    (with-temp-buffer
+      (unless (zerop (vc-got--call "tag" "-m" msg tag))
+        (error "[vc-got] can't create tag %s: %s" tag (buffer-string))))))
+
 (defun vc-got-create-tag (_dir name branchp)
   "Attach the tag NAME to the state of the worktree.
-DIR is ignored (tags are global, not per-file).
-If BRANCHP is true, NAME should create a new branch."
+DIR is ignored (tags are global, not per-file).  If BRANCHP is
+true, NAME should create a new branch otherwise it will pop-up a
+`log-edit' buffer to provide the tag message."
   ;; TODO: vc reccomends to ensure that all the file are in a clean
   ;; state, but is it useful?
   (if branchp
       (vc-got--branch name)
-    (error "[vc-got] create tags is not implemented (yet)")))
+    (let ((buf (get-buffer-create "*vc-got tag*")))
+      (with-current-buffer buf
+        (erase-buffer)
+        (switch-to-buffer buf)
+        (log-edit (lambda ()
+                    (interactive)
+                    (unwind-protect
+                        (vc-got--tag-callback name)
+                      (kill-buffer buf))))))))
 
 
 ;; Miscellaneous
