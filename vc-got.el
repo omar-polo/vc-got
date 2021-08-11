@@ -97,6 +97,7 @@
 ;; - root                               DONE
 ;; - ignore                             NOT IMPLEMENTED
 ;; - ignore-completion-table            NOT IMPLEMENTED
+;; - find-ignore-file                   DONE
 ;; - previous-revision                  DONE
 ;; - next-revision                      DONE
 ;; - log-edit-mode                      NOT IMPLEMENTED
@@ -588,11 +589,6 @@ FILES is nil, consider all the files in DIR."
       (vc-got-with-worktree file
         (vc-got--cat rev obj-id)))))
 
-(defun vc-got-find-ignore-file (file)
-  "Return the gitignore file that controls FILE."
-  (expand-file-name ".gitignore"
-                    (vc-got-root file)))
-
 (defun vc-got-checkout (_file &optional _rev)
   "Checkout revision REV of FILE.
 If REV is t, checkout from the head."
@@ -837,6 +833,11 @@ true, NAME should create a new branch otherwise it will pop-up a
 
 
 ;; Miscellaneous
+
+(defun vc-got-find-ignore-file (file)
+  "Return the gitignore file that controls FILE."
+  (expand-file-name ".gitignore"
+                    (vc-got-root file)))
 
 (defun vc-got-previous-revision (file rev)
   "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
