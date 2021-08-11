@@ -48,7 +48,7 @@
 ;; * register                           DONE
 ;; - responsible-p                      DONE
 ;; - receive-file                       NOT NEEDED, default `register' works fine
-;; - unregister                         NOT IMPLEMENTED, no use case
+;; - unregister                         DONE
 ;; * checkin                            DONE
 ;; * find-revision                      DONE
 ;; * checkout                           NOT IMPLEMENTED
@@ -566,6 +566,12 @@ FILES is nil, consider all the files in DIR."
   (vc-got--add files))
 
 (defalias 'vc-got-responsible-p #'vc-got-root)
+
+(defun vc-got-unregister (file)
+  "Unregister FILE."
+  (with-temp-buffer
+    (unless (zerop (vc-got--call "remove" "-fk" "--" file))
+      (error "[vc-got] can't unregister %s: %s" file (buffer-string)))))
 
 ;; XXX: generally speaking, files cannot be nil.  But we have to
 ;; handle that case too, because vc-got-stage-commit will call
