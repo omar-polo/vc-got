@@ -576,7 +576,7 @@ FILES is nil, consider all the files in DIR."
     (unless (zerop (vc-got--call "commit" "-m"
                                  (log-edit-extract-headers nil comment)
                                  files))
-      (error (buffer-string)))))
+      (error "[vc-got] can't commit: %s" (buffer-string)))))
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
