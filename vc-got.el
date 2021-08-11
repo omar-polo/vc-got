@@ -729,8 +729,15 @@ Heavily inspired by `vc-git-log-view-mode'."
               (vc-got--diff file))
           ;; TODO: if rev1 is nil, diff from the current version until
           ;; rev2.
+          ;;
           ;; TODO: if rev2 is nil as well, diff against an empty tree
           ;; (i.e. get the patch from `got log -p rev1')
+          ;;
+          ;; TODO: it would be nice to optionally include FILES here,
+          ;; it would make the `=' key on the *Annotate* buffer do the
+          ;; right thing, but AFAICS got doesn't provide something
+          ;; like this.  Probably only hacking something with ``log
+          ;; -p'' and filtering?
           (vc-got--diff rev1 rev2))))))
 
 (defun vc-got-revision-completion-table (_files)
