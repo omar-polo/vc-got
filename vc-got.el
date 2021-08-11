@@ -163,8 +163,7 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
 
 (defun vc-got-root (file)
   "Return the work tree root for FILE, or nil."
-  (or (vc-file-getprop file 'got-root)
-      (vc-file-setprop file 'got-root (vc-find-root file ".got"))))
+  (vc-find-root file ".got"))
 
 (defmacro vc-got-with-worktree (file &rest body)
   "Evaluate BODY in the work tree directory of FILE."
