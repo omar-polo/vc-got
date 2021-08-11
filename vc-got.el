@@ -90,7 +90,7 @@
 ;;
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
-;; - retrieve-tag                       NOT IMPLEMENTED
+;; - retrieve-tag                       DONE
 ;;
 ;; MISCELLANEOUS                        NOT IMPLEMENTED
 ;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
@@ -825,6 +825,15 @@ true, NAME should create a new branch otherwise it will pop-up a
                     (unwind-protect
                         (vc-got--tag-callback name)
                       (kill-buffer buf))))))))
+
+(defun vc-got-retrieve-tag (dir name _update)
+  "Switch to the tag NAME for files at or below DIR."
+  (let ((default-directory dir))
+    (with-temp-buffer
+      (unless (zerop (vc-got--call "update" "-b" name dir))
+        (error "[vc-got] can't switch to tag %s: %s"
+               name
+               (buffer-string))))))
 
 
 ;; Miscellaneous
