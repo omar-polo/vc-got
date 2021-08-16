@@ -126,7 +126,6 @@
   (require 'subr-x))
 
 (require 'cl-lib)
-(require 'cl-seq)
 (require 'seq)
 (require 'vc)
 (require 'vc-annotate)
