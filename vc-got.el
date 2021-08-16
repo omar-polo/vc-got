@@ -3,7 +3,10 @@
 ;; Copyright (C) 2020  Omar Polo
 
 ;; Author: Omar Polo <op@omarpolo.com>
+;; URL: https://git.omarpolo.com/vc-got/
 ;; Keywords: vc
+;; Version: 0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
