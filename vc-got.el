@@ -137,8 +137,6 @@
 ;; vc-dir-filename-mouse-map in our custom printer.
 (require 'vc-dir)
 
-(require 'vc-got-stage)
-
 (defgroup vc-got nil
   "VC GoT backend."
   :group 'vc)
@@ -587,9 +585,6 @@ FILES is nil, consider all the files in DIR."
   "Unregister FILE."
   (vc-got--remove file t t))
 
-;; XXX: generally speaking, files cannot be nil.  But we have to
-;; handle that case too, because vc-got-stage-commit will call
-;; vc-got-checkin with fileset nil to commit the current staged hunks.
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer

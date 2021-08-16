@@ -1,6 +1,6 @@
 EMACS =		emacs
 
-compile: vc-got.elc vc-got-stage.elc
+compile: vc-got.elc
 
 clean:
 	rm -f *.elc
