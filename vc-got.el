@@ -352,6 +352,16 @@ given COMMIT."
   (with-temp-buffer
     (zerop (vc-got--call "integrate" branch))))
 
+(defun vc-got--update (branch &optional paths)
+  "Update to a different commit or BRANCH.
+Optionally restrict the update operation to files at or within
+the specified PATHS."
+  (with-temp-buffer
+    (unless (zerop (vc-got--call "update" "-b" branch "--" paths))
+      (error "[vc-got] can't update to branch %s: %s"
+             branch
+             (buffer-string)))))
+
 (defun vc-got--diff (&rest args)
   "Call got diff with ARGS.  The result will be stored in the current buffer."
   (let (process-file-side-effects)
@@ -839,11 +849,7 @@ true, NAME should create a new branch otherwise it will pop-up a
 (defun vc-got-retrieve-tag (dir name _update)
   "Switch to the tag NAME for files at or below DIR."
   (let ((default-directory dir))
-    (with-temp-buffer
-      (unless (zerop (vc-got--call "update" "-b" name "--" dir))
-        (error "[vc-got] can't switch to tag %s: %s"
-               name
-               (buffer-string))))))
+    (vc-got--update name dir)))
 
 
 ;; Miscellaneous
