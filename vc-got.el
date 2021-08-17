@@ -689,13 +689,14 @@ START-REVISION."
                                limit
                                start-revision)))))
 
-;; XXX: this includes also the latest commit in REMOTE-LOCATION.
 (defun vc-got-log-outgoing (buffer remote-location)
   "Fill BUFFER with the diff between the local worktree branch and REMOTE-LOCATION."
   (vc-setup-buffer buffer)
-  (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
-                (concat "origin/" (vc-got--current-branch))
-              remote-location))
+  (let ((rl (vc-got-next-revision
+             nil
+             (if (or (not remote-location) (string-empty-p remote-location))
+                 (concat "origin/" (vc-got--current-branch))
+               remote-location)))
         (inhibit-read-only t))
     (with-current-buffer buffer
       (vc-got--log nil nil nil rl))))
