@@ -4,7 +4,7 @@
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;; URL: https://git.omarpolo.com/vc-got/
-;; Keywords: vc
+;; Keywords: vc tools
 ;; Version: 0
 ;; Package-Requires: ((emacs "27.1"))
 
