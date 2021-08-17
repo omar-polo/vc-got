@@ -68,8 +68,10 @@
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
 ;;      what it is supposed to do.
-;; - mark-resolved                      NOT IMPLEMENTED
-;; - find-admin-dir                     NOT IMPLEMENTED
+;; - mark-resolved                      NOT NEEDED
+;;      got notice by itself when a file doesn't have any pending
+;;      conflicts to be resolved.
+;; - find-admin-dir                     NOT NEEDED
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
