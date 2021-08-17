@@ -1,8 +1,10 @@
 ;;; vc-got.el --- VC backend for Game of Trees VCS   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020, 2021  Omar Polo
+;; Copyright (C) 2020, 2021 Omar Polo
+;; Copyright (C) 2020, 2021 Timo Myyrä
 
 ;; Author: Omar Polo <op@omarpolo.com>
+;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
 ;; URL: https://git.omarpolo.com/vc-got/
 ;; Keywords: vc tools
 ;; Version: 0
