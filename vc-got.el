@@ -426,8 +426,8 @@ files on disk."
   "Got has REPOSITORY granularity."
   'repository)
 
-;; XXX: what this should do?  The description is not entirely clear
 (defun vc-got-update-on-retrieve-tag ()
+  "Like vc-git, vc-got don't need to buffers on `retrieve-tag'."
   nil)
 
 
