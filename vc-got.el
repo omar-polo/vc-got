@@ -134,6 +134,10 @@
 (require 'vc-annotate)
 
 ;; FIXME: avoid loading this?  We only need it for
+;; log-edit-extract-headers in vc-got-checkin.
+(require 'log-edit)
+
+;; FIXME: avoid loading this?  We only need it for
 ;; vc-dir-filename-mouse-map in our custom printer.
 (require 'vc-dir)
 
