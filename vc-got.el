@@ -1,4 +1,4 @@
-;;; vc-got.el --- Game of Tree backend for VC        -*- lexical-binding: t; -*-
+;;; vc-got.el --- VC backend for Game of Trees VCS   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020, 2021  Omar Polo
 
