@@ -1,6 +1,13 @@
 EMACS =		emacs
 
+.PHONY: all compile lint clean
+
+all: compile lint
+
 compile: vc-got.elc
+
+lint:
+	${EMACS} -Q --batch -L . -l targets/lint.el
 
 clean:
 	rm -f *.elc
