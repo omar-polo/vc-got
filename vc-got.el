@@ -53,7 +53,7 @@
 ;;      do.
 ;; * register                           DONE
 ;; - responsible-p                      DONE
-;; - receive-file                       NOT NEEDED, default `register' works fine
+;; - receive-file                       NOT NEEDED, default `register' is fine
 ;; - unregister                         DONE
 ;; * checkin                            DONE
 ;; * find-revision                      DONE
@@ -111,9 +111,9 @@
 ;; - log-edit-mode                      NOT IMPLEMENTED
 ;; - check-headers                      NOT NEEDED, `got' does not use headers
 ;; - delete-file                        DONE
-;; - rename-file                        NOT NEEDED, `delete' + `register' is enough
+;; - rename-file                        NOT IMPLEMENTED
 ;; - find-file-hook                     DONE
-;; - extra-menu                         NOT IMPLEMENTED, add `import', `integrate', `stage'?
+;; - extra-menu                         NOT IMPLEMENTED
 ;; - extra-dir-menu                     NOT IMPLEMENTED, same as above
 ;; - conflicted-files                   DONE
 ;; - repository-url                     DONE
@@ -224,7 +224,8 @@ worktree."
                              "--"
                              path)))
         (save-excursion
-          (delete-matching-lines "^-----------------------------------------------$")
+          (delete-matching-lines
+           "^-----------------------------------------------$")
           t)))))
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
@@ -248,25 +249,30 @@ files)."
                                  (or files dir-or-file)))
         (goto-char (point-min))
         (cl-loop until (eobp)
-                 ;; the format of each line is
-                 ;; <status-char> <stage-char> <spc> <filename> \n
-                 collect (let* ((file-status (prog1 (vc-got--parse-status-char
-                                                     (char-after))
-                                               (forward-char)))
-                                (stage-status (let* ((c (char-after)))
-                                                (prog1
-                                                    (when (member c '(?M ?A ?D))
-                                                      c)
-                                                  (forward-char))))
-                                (filename (progn
-                                            (forward-char)
-                                            (buffer-substring (point)
-                                                              (line-end-position)))))
-                           (list (file-relative-name (expand-file-name filename root)
-                                                     default-directory)
-                                 (or file-status (and stage-status 'up-to-date))
-                                 stage-status))
+                 collect (vc-got--parse-status-line root)
                  do (forward-line))))))
+
+(defun vc-got--parse-status-line (root)
+  "Parse a line of the the output of status.
+ROOT is the root of the repo."
+  ;; the format of each line is
+  ;; <status-char> <stage-char> <spc> <filename> \n
+  (let* ((file-status (prog1 (vc-got--parse-status-char
+                              (char-after))
+                        (forward-char)))
+         (stage-status (let* ((c (char-after)))
+                         (prog1
+                             (when (member c '(?M ?A ?D))
+                               c)
+                           (forward-char))))
+         (filename (progn
+                     (forward-char)
+                     (buffer-substring (point)
+                                       (line-end-position)))))
+    (list (file-relative-name (expand-file-name filename root)
+                              default-directory)
+          (or file-status (and stage-status 'up-to-date))
+          stage-status)))
 
 (defun vc-got--parse-status-char (c)
   "Parse status char C into a symbol accepted by `vc-state'."
@@ -338,7 +344,8 @@ given COMMIT."
                         (_ (move-beginning-of-line nil))
                         (_ (forward-char 2))
                         (start-branchname (point))
-                        (branchname (buffer-substring start-branchname end-branchname))
+                        (branchname (buffer-substring start-branchname
+                                                      end-branchname))
                         (commit (buffer-substring start-commit end-commit)))
                    (forward-line)
                    (move-beginning-of-line nil)
@@ -541,13 +548,16 @@ FILES is nil, consider all the files in DIR."
                          'font-lock-function-name-face)
                  'help-echo
                  (if isdir
-                     "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
+                     (concat
+                      "Directory\n"
+                      "VC operations can be applied to it\n"
+                      "mouse-3: Pop-up menu")
                    "File\nmouse-3: Pop-up menu")
                  'mouse-face 'highlight
                  'keymap vc-dir-filename-mouse-map))))
 
 (defun vc-got-working-revision (file)
-  "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
+  "Return the last commit that touched FILE or \"0\" if it's newly added."
   (or
    (with-temp-buffer
      (when (vc-got--log file 1)
@@ -650,19 +660,11 @@ If REV is t, checkout from the head."
                                                   nil))))
       (vc-set-async-update buffer))))
 
-;; TODO: this can be expanded.  See whan omyksh does:
-;; function got-sync {
-;; 	local _remote _info _branch
-;; 	_remote=$1
-;; 	_info="$(got info)"
-;; 	_branch="$(echo "$_info" | awk '/branch reference:/ {l = split($NF, a, "/"); print a[l]}')"
-;; 	[ -z $_remote ] && _remote="origin"
-;; 	[ -z $_branch ] && _branch="main"
-;; 	got fetch "$_remote" && got update -b "$_remote/$_branch" && \
-;; 		got rebase $_branch
-;; }
+;; TODO: this could be expanded.  After a pull the worktree needs to
+;; be updated, either with a ``got update -b branch-name'' and
+;; eventually a rebase.
 (defun vc-got-pull (prompt)
-  "Execute got pull, prompting the user for the full command if PROMPT is not nil."
+  "Execute a pull prompting for the full command if PROMPT is not nil."
   (let ((default-directory (vc-got-root default-directory)))
     (vc-got--push-pull vc-got-program "fetch" prompt)))
 
@@ -683,7 +685,9 @@ START-REVISION."
     ;; the *vc-diff* may be read only
     (let ((inhibit-read-only t))
       (cl-loop for file in files
-               do (vc-got--log (file-relative-name file) limit start-revision)))))
+               do (vc-got--log (file-relative-name file)
+                               limit
+                               start-revision)))))
 
 ;; XXX: this includes also the latest commit in REMOTE-LOCATION.
 (defun vc-got-log-outgoing (buffer remote-location)
@@ -864,7 +868,7 @@ true, NAME should create a new branch otherwise it will pop-up a
                     (vc-got-root file)))
 
 (defun vc-got-previous-revision (file rev)
-  "Return the revision number that precedes REV for FILE, or nil if no such revision exists."
+  "Return the revision number that precedes REV for FILE or nil."
   (with-temp-buffer
     (vc-got--log file 2 rev nil nil t)
     (goto-char (point-min))
@@ -873,7 +877,7 @@ true, NAME should create a new branch otherwise it will pop-up a
       (match-string-no-properties 1))))
 
 (defun vc-got-next-revision (file rev)
-  "Return the revision number that follows REV for FILE, or nil if no such revision exists."
+  "Return the revision number that follows REV for FILE or nil."
   (with-temp-buffer
     (vc-got--log file nil nil rev)
     (keep-lines "^commit" (point-min) (point-max))
