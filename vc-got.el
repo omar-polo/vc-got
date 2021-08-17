@@ -23,6 +23,9 @@
 
 ;;; Commentary:
 
+;; This file contains a VC backend for the Game of Trees (got) version
+;; control system.
+
 ;; Backend implementation status
 ;;
 ;; Function marked with `*' are required, those with `-' are optional.
