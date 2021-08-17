@@ -565,7 +565,8 @@ FILES is nil, consider all the files in DIR."
      "0")))
 
 (defun vc-got-checkout-model (_files)
-  "Got uses an implicit checkout model for every file."
+  "Return the checkout model.
+Got uses an implicit checkout model for every file."
   'implicit)
 
 (defun vc-got-mode-line-string (file)
