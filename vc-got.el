@@ -366,13 +366,14 @@ the specified PATHS."
              branch
              (buffer-string)))))
 
-(defun vc-got--diff (&rest args)
-  "Call got diff with ARGS.  The result will be stored in the current buffer."
+(defun vc-got--diff (&rest files)
+  "Call got diff against FILES.
+The result will be stored in the current buffer."
   (let (process-file-side-effects)
     (zerop (vc-got--call "diff"
                          (vc-switches 'got 'diff)
                          "--"
-                         (mapcar #'file-relative-name args)))))
+                         (mapcar #'file-relative-name files)))))
 
 (defun vc-got--unstage (file-or-directory)
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
