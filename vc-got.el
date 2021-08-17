@@ -248,9 +248,11 @@ files)."
                  collect (let* ((file-status (prog1 (vc-got--parse-status-char
                                                      (char-after))
                                                (forward-char)))
-                                (stage-status (prog1 (vc-got--parse-stage-char
-                                                      (char-after))
-                                                (forward-char)))
+                                (stage-status (let* ((c (char-after)))
+                                                (prog1
+                                                    (when (member c '(?M ?A ?D))
+                                                      c)
+                                                  (forward-char))))
                                 (filename (progn
                                             (forward-char)
                                             (buffer-substring (point)
@@ -273,13 +275,6 @@ files)."
     (?? 'unregistered)
     (?m 'edited) ; modified file modes
     (?N nil)))
-
-(defun vc-got--parse-stage-char (c)
-  "Parse the stage status char C into a symbol."
-  (cl-case c
-    (?M 'edit)
-    (?A 'add)
-    (?D 'remove)))
 
 (defun vc-got--tree-parse ()
   "Parse into an alist the output of got tree -i in the current buffer."
@@ -514,36 +509,37 @@ FILES is nil, consider all the files in DIR."
          (stage-state (vc-dir-fileinfo->extra info))
          (filename (vc-dir-fileinfo->name info)))
     (insert
+     "  "
      (propertize
       (format "%c" (if (vc-dir-fileinfo->marked info) ?* ? ))
       'face 'font-lock-type-face)
-     " "
+     "  "
      (propertize
-      (if stage-state
-          (format "staged:%-6s" stage-state)
-        (format "%-13s" ""))
-      'face (cond ((memq stage-state '(add edit)) 'font-lock-constant-face)
-                  ((eq stage-state 'remove) 'font-lock-warning-face)
-                  (t 'font-lock-variable-name-face)))
-     " "
-     (propertize
-      (format "%-14s" state)
+      (format "%-12s" state)
       'face (cond ((eq state 'up-to-date) 'font-lock-builtin-face)
                   ((memq state '(missing conflict)) 'font-lock-warning-face)
                   ((eq state 'edited) 'font-lock-constant-face)
                   (t 'font-lock-variable-name-face))
-      'mouse-face 'highlight)
-     " "
-     (propertize
-      (format "%s" filename)
-      'face
-      (if isdir 'font-lock-comment-delimiter-face 'font-lock-function-name-face)
-      'help-echo
-      (if isdir
-          "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
-        "File\nmouse-3: Pop-up menu")
       'mouse-face 'highlight
-      'keymap vc-dir-filename-mouse-map))))
+      'keymap vc-dir-status-mouse-map)
+
+     "   " (propertize
+            (if stage-state
+                (format "%c" stage-state)
+              " ")
+            'face (cond ((memq stage-state '(?A ?E)) 'font-lock-constant-face)
+                        ((eq stage-state ?R) 'font-lock-warning-face)
+                        (t 'font-lock-variable-name-face)))
+     "    "
+     (propertize filename
+                 'face (if isdir 'font-lock-comment-delimiter-face
+                         'font-lock-function-name-face)
+                 'help-echo
+                 (if isdir
+                     "Directory\nVC operations can be applied to it\nmouse-3: Pop-up menu"
+                   "File\nmouse-3: Pop-up menu")
+                 'mouse-face 'highlight
+                 'keymap vc-dir-filename-mouse-map))))
 
 (defun vc-got-working-revision (file)
   "Return the id of the last commit that touched the FILE or \"0\" for a new (but added) file."
@@ -931,18 +927,6 @@ true, NAME should create a new branch otherwise it will pop-up a
               (setq found (match-string-no-properties 1)))
             (forward-line))
           found)))))
-
-
-;; hacks
-(defun vc-got-fix-dir-move-to-goal-column (fn)
-  "Move the cursor on the file column.
-Adviced around `vc-dir-move-to-goal-column' (FN) because it hardcodes column 25."
-  (if (not (vc-find-root default-directory ".got"))
-      (funcall fn)
-    (beginning-of-line)
-    (unless (eolp)
-      (forward-char 31))))
-(advice-add 'vc-dir-move-to-goal-column :around #'vc-got-fix-dir-move-to-goal-column)
 
 (provide 'vc-got)
 ;;; vc-got.el ends here
