@@ -257,7 +257,7 @@ files)."
                                                               (line-end-position)))))
                            (list (file-relative-name (expand-file-name filename root)
                                                      default-directory)
-                                 (or file-status (and stage-status 'staged))
+                                 (or file-status (and stage-status 'up-to-date))
                                  stage-status))
                  do (forward-line))))))
 
