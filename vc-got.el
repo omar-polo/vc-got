@@ -1,6 +1,6 @@
 ;;; vc-got.el --- Game of Tree backend for VC        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Omar Polo
+;; Copyright (C) 2020, 2021  Omar Polo
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;; URL: https://git.omarpolo.com/vc-got/
