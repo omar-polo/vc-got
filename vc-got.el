@@ -690,7 +690,7 @@ If REV is t, checkout from the head."
   "Run git push (not got!) in the repository dir.
 If PROMPT is non-nil, prompt for the git command to run."
   (let ((default-directory (vc-got--repo-root)))
-    (vc-got--push-pull "git" "push" prompt)))
+    (vc-got--push-pull vc-got-program "send" prompt)))
 
 
 ;; History functions
