@@ -38,6 +38,9 @@ months, there are some rough edges.  Fetching updates in particular is
 one action that *at the moment* is better to do by hand.  Pushing,
 committing, blaming etc on the other hand are fully functional.
 
+Note that pushing requires at least got 0.56, other functionalities
+should work with older versions.
+
 
 ## Contributing
 
