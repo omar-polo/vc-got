@@ -872,7 +872,11 @@ Creates the TAG using the content of the current buffer."
   (let ((msg (buffer-substring-no-properties (point-min)
                                              (point-max))))
     (with-temp-buffer
-      (unless (zerop (vc-got--call "tag" "-m" msg "--" tag))
+      (unless (zerop (vc-got--call "tag"
+                                   "-m"
+                                   (log-edit-extract-headers nil msg)
+                                   "--"
+                                   tag))
         (error "[vc-got] can't create tag %s: %s" tag (buffer-string))))))
 
 (defun vc-got-create-tag (_dir name branchp)
@@ -887,6 +891,9 @@ true, NAME should create a new branch otherwise it will pop-up a
     (let ((buf (get-buffer-create "*vc-got tag*")))
       (with-current-buffer buf
         (erase-buffer)
+        (save-excursion
+          (insert "Summary: tag " name "\n\n"))
+        (move-end-of-line 1)
         (switch-to-buffer buf)
         (log-edit (lambda ()
                     (interactive)
