@@ -148,6 +148,14 @@
 ;; vc-dir-filename-mouse-map in our custom printer.
 (require 'vc-dir)
 
+;; FIXME: avoid loading this?  We only need it for
+;; compilation-{directory,arguments}.
+(require 'compile)
+
+;; FIXME: avoid loading this?  We only need it for
+;; log-view-{file-re,per-file-logs,message-re}.
+(require 'log-view)
+
 (defgroup vc-got nil
   "VC GoT backend."
   :group 'vc)
@@ -165,6 +173,15 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
                  (repeat :tag "Argument List" :value ("") string)))
 
 ;; helpers
+(defmacro vc-got--with-emacs-version<= (version &rest body)
+  "Eval BODY only when the Emacs version in greater or equal VERSION."
+  (declare (debug body)
+           (indent defun))
+  (when (version<= version emacs-version)
+    `(progn ,@body)))
+
+(macroexpand-1 '(vc-got--with-version<= "29.0.50" foobar))
+
 (defun vc-got--program-version ()
   "Return string representing the got version."
   (let (process-file-side-effects)
@@ -535,7 +552,8 @@ FILES is nil, consider all the files in DIR."
                   ((eq state 'edited) 'font-lock-constant-face)
                   (t 'font-lock-variable-name-face))
       'mouse-face 'highlight
-      'keymap vc-dir-status-mouse-map)
+      'keymap (vc-got--with-emacs-version<= "28.0.50"
+                vc-dir-status-mouse-map))
 
      "   " (propertize
             (if stage-state
@@ -654,9 +672,9 @@ If REV is t, checkout from the head."
       (with-current-buffer buffer
         (vc-compilation-mode 'git)
         (let ((comp-cmd (mapconcat #'identity cmd " ")))
-          (setq-local compile-command comp-cmd
-                      compilation-directory default-directory
-                      compilation-arguments (list comp-cmd
+          (setq-local compile-command comp-cmd)
+          (setq-local compilation-directory default-directory)
+          (setq-local compilation-arguments (list comp-cmd
                                                   nil
                                                   (lambda (_ign) buffer)
                                                   nil))))
@@ -722,24 +740,22 @@ START-REVISION."
   "Got-specific log-view mode.
 Heavily inspired by `vc-git-log-view-mode'."
   (require 'add-log)
-  (setq-local
-   log-view-file-re regexp-unmatchable
-   log-view-per-file-logs nil
-   log-view-message-re "^commit +\\([0-9a-z]+\\)"
-
-   log-view-font-lock-keywords
-   (append
-    `((,log-view-message-re (1 'change-log-acknowledgment)))
-    ;; Handle the case:
-    ;; user: foo@bar
-    '(("^from: \\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)"
-       (1 'change-log-email))
-      ;; Handle the case:
-      ;; user: FirstName LastName <foo@bar>
-      ("^from: \\([^<(]+?\\)[ \t]*[(<]\\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)[>)]"
-       (1 'change-log-name)
-       (2 'change-log-email))
-      ("^date: \\(.+\\)" (1 'change-log-date))))))
+  (setq-local log-view-file-re regexp-unmatchable)
+  (setq-local log-view-per-file-logs nil)
+  (setq-local log-view-message-re "^commit +\\([0-9a-z]+\\)")
+  (setq-local log-view-font-lock-keywords
+              (append
+               `((,log-view-message-re (1 'change-log-acknowledgment)))
+               ;; Handle the case:
+               ;; user: foo@bar
+               '(("^from: \\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)"
+                  (1 'change-log-email))
+                 ;; Handle the case:
+                 ;; user: FirstName LastName <foo@bar>
+                 ("^from: \\([^<(]+?\\)[ \t]*[(<]\\([A-Za-z0-9_.+-]+@[A-Za-z0-9_.-]+\\)[>)]"
+                  (1 'change-log-name)
+                  (2 'change-log-email))
+                 ("^date: \\(.+\\)" (1 'change-log-date))))))
 
 ;; TODO: async
 ;; TODO: return 0 or 1
