@@ -41,8 +41,8 @@ committing, blaming etc on the other hand are fully functional.
 
 ## Contributing
 
-The long-term plan is to get this into Emacs.  This means that to
-avoid possible problems, a GNU copyright assignment is required.  It's
-really easy to get one (just send an email), and having one will allow
-you to make further contribution to Emacs itself or to various
-other packages.
+The long-term plan is to get this into Emacs (or ELPA at least).  This
+means that to avoid possible problems, a GNU copyright assignment is
+required.  It's really easy to get one (just send an email), and
+having one will allow you to make further contribution to Emacs itself
+or to various other packages.
