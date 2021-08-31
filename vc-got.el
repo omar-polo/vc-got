@@ -180,8 +180,6 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
   (when (version<= version emacs-version)
     `(progn ,@body)))
 
-(macroexpand-1 '(vc-got--with-version<= "29.0.50" foobar))
-
 (defun vc-got--program-version ()
   "Return string representing the got version."
   (let (process-file-side-effects)
