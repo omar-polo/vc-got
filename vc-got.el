@@ -68,7 +68,6 @@
 ;; - merge-news                         NOT IMPLEMENTED
 ;; - pull                               DONE
 ;; - push                               DONE
-;;      uses git
 ;; - steal-lock                         NOT NEEDED, `got' is not using locks
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
