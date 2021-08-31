@@ -654,6 +654,26 @@ If REV is t, checkout from the head."
     (when branch
       (vc-got--integrate branch))))
 
+(defun vc-got--proc-filter (proc s)
+  "Custom output filter for async process PROC.
+It's like `vc-process-filter' but supports \r inside S."
+  (let ((buffer (process-buffer proc)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (save-excursion
+          (let ((buffer-undo-list t)
+                (inhibit-read-only t))
+            (goto-char (process-mark proc))
+            (if (not (string-match ".*\r\\(.*\\)" s))
+                (insert s)
+              ;; handle \r
+              (end-of-line)
+              (let ((end (point)))
+                (beginning-of-line)
+                (delete-region (point) end))
+              (insert (match-string 1 s)))
+            (set-marker (process-mark proc) (point))))))))
+
 (defun vc-got--push-pull (cmd op prompt)
   "Execute CMD OP, or prompt the user if PROMPT is non-nil."
   (let ((buffer (format "*vc-got : %s*" (expand-file-name default-directory))))
@@ -668,14 +688,17 @@ If REV is t, checkout from the head."
       ;; part it makes sense, but we should revisit for full Got
       ;; support.
       (with-current-buffer buffer
-        (vc-compilation-mode 'git)
-        (let ((comp-cmd (mapconcat #'identity cmd " ")))
+        (vc-compilation-mode 'got)
+        (let ((comp-cmd (mapconcat #'identity cmd " "))
+              (proc (get-buffer-process buffer)))
           (setq-local compile-command comp-cmd)
           (setq-local compilation-directory default-directory)
           (setq-local compilation-arguments (list comp-cmd
                                                   nil
                                                   (lambda (_ign) buffer)
-                                                  nil))))
+                                                  nil))
+          ;; Setup a custom process filter that handles \r.
+          (set-process-filter proc #'vc-got--proc-filter)))
       (vc-set-async-update buffer))))
 
 ;; TODO: this could be expanded.  After a pull the worktree needs to
