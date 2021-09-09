@@ -8,7 +8,7 @@
 ;; URL: https://git.omarpolo.com/vc-got/
 ;; Keywords: vc tools
 ;; Version: 0
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -192,7 +192,7 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
 
 (defmacro vc-got-with-worktree (file &rest body)
   "Evaluate BODY in the work tree directory of FILE."
-  (declare (indent defun))
+  (declare (debug t) (indent defun))
   `(when-let (default-directory (vc-got-root ,file))
      ,@body))
 
@@ -208,7 +208,7 @@ Assume `default-directory' is inside a got worktree."
   "Call `vc-got-program' with ARGS.
 The output will be placed in the current buffer."
   (apply #'process-file vc-got-program nil (current-buffer) nil
-         (cl-remove-if #'null (flatten-list args))))
+         (apply #'nconc (mapcar (lambda (s) (if (listp s) s (list s))) args))))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
@@ -227,16 +227,16 @@ REVERSE: display the log messages in reverse order.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
-  (let (process-file-side-effects)
+  (let ((process-file-side-effects nil))
     (vc-got-with-worktree (or path default-directory)
       (when (zerop
              (save-excursion
                (vc-got--call "log"
-                             (when limit (list "-l" (format "%s" limit)))
-                             (when start-commit (list "-c" start-commit))
-                             (when stop-commit (list "-x" stop-commit))
-                             (when search-pattern (list "-s" search-pattern))
-                             (when reverse '("-R"))
+                             (and limit (list "-l" (format "%s" limit)))
+                             (and start-commit (list "-c" start-commit))
+                             (and stop-commit (list "-x" stop-commit))
+                             (and search-pattern (list "-s" search-pattern))
+                             (and reverse '("-R"))
                              "--"
                              path)))
         (save-excursion
@@ -260,7 +260,7 @@ files)."
            (root (vc-got-root default-directory))
            (process-file-side-effects))
       (when (zerop (vc-got--call "status"
-                                 (when status-codes (list "-s" status-codes))
+                                 (and status-codes (list "-s" status-codes))
                                  "--"
                                  (or files dir-or-file)))
         (goto-char (point-min))
@@ -306,26 +306,17 @@ ROOT is the root of the repo."
 (defun vc-got--tree-parse ()
   "Parse into an alist the output of got tree -i in the current buffer."
   (goto-char (point-min))
-  (cl-loop
-   until (= (point) (point-max))
-   collect (let* ((obj-start (point))
-                  (_ (forward-word))
-                  (obj (buffer-substring obj-start (point)))
-                  (_ (forward-char))         ; skip the space
-                  (filename-start (point))
-                  (_ (move-end-of-line nil))
-                  (filename (buffer-substring filename-start (point))))
-             ;; goto the start of the next line
-             (forward-line)
-             (move-beginning-of-line nil)
-             `(,filename . ,obj))))
+  (let (alist)
+    (while (re-search-forward "^\\([[:word:]]+\\) \\(?:.+\\)+$" nil t)
+      (push (cons (match-string 2) (match-string 1)) alist))
+    alist))
 
 (defun vc-got--tree (commit path)
   "Return an alist representing the got tree command output.
 The outputted tree will be localised in the given PATH at the
 given COMMIT."
   (vc-got-with-worktree path
-    (let (process-file-side-effects)
+    (let ((process-file-side-effects nil))
       (with-temp-buffer
         (when (zerop (vc-got--call "tree" "-c" commit "-i" "--" path))
           (vc-got--tree-parse))))))
@@ -346,26 +337,11 @@ given COMMIT."
   (let (process-file-side-effects)
     (with-temp-buffer
       (when (zerop (vc-got--call "branch" "-l"))
-        (goto-char (point-min))
-        (cl-loop
-         until (= (point) (point-max))
-         ;; parse the `* $branchname: $commit', from the end
-         ;; XXX: use a regex?
-         collect (let* ((_ (move-end-of-line nil))
-                        (end-commit (point))
-                        (_ (backward-word))
-                        (start-commit (point))
-                        (_ (backward-char 2))
-                        (end-branchname (point))
-                        (_ (move-beginning-of-line nil))
-                        (_ (forward-char 2))
-                        (start-branchname (point))
-                        (branchname (buffer-substring start-branchname
-                                                      end-branchname))
-                        (commit (buffer-substring start-commit end-commit)))
-                   (forward-line)
-                   (move-beginning-of-line nil)
-                   `(,branchname . ,commit)))))))
+        (let (alist)
+          (goto-char (point-min))
+          (while (re-search-forward "^\\* \\(.+\\): \\([[:word:]]+\\)$" nil t)
+            (push (cons (match-string 1) (match-string 2)) alist))
+          alist)))))
 
 (defun vc-got--current-branch ()
   "Return the current branch."
@@ -412,14 +388,14 @@ files on disk."
   (vc-got-with-worktree (or file default-directory)
     (with-temp-buffer
       (zerop (vc-got--call "remove"
-                           (when force "-f")
-                           (when keep-local "-k")
+                           (and force "-f")
+                           (and keep-local "-k")
                            "--"
                            file)))))
 
 (defun vc-got--ref ()
   "Return a list of all references."
-  (let (process-file-side-effects
+  (let ((process-file-side-effects nil)
         (re "^refs/\\(heads\\|remotes\\|tags\\)/\\(.*\\):")
         ;; hardcoding HEAD because it's always present and the regexp
         ;; won't match it.
@@ -818,7 +794,7 @@ revisions''; instead, like with git, you have tags and branches."
       ;; FIXME: vc-ensure-vc-buffer won't recognise this buffer as managed
       ;; by got unless vc-parent-buffer points to a buffer managed by got.
       ;; investigate why this is needed.
-      (set (make-local-variable 'vc-parent-buffer) (find-file-noselect file))
+      (setq-local vc-parent-buffer (find-file-noselect file))
       (vc-got--call "blame"
                     (when rev (list "-c" rev))
                     "--"
@@ -953,13 +929,11 @@ true, NAME should create a new branch otherwise it will pop-up a
   "Return the list of files with conflicts in directory DIR."
   (let* ((root (vc-got-root dir))
          (default-directory root)
-         (process-file-side-effects))
-    (cl-loop with conflicts = nil
-             for (file status _) in (vc-got--status "C" ".")
-             do (when (and (eq status 'conflict)
-                           (file-in-directory-p file dir))
-                  (push file conflicts))
-             finally return conflicts)))
+         (process-file-side-effects nil))
+    (cl-loop for (file status _) in (vc-got--status "C" ".")
+             when (and (eq status 'conflict)
+                       (file-in-directory-p file dir))
+             collect file)))
 
 (defun vc-got-repository-url (_file &optional remote-name)
   "Return URL for REMOTE-NAME, or for \"origin\" if nil."
