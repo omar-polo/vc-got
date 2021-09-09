@@ -938,5 +938,16 @@ true, NAME should create a new branch otherwise it will pop-up a
             (forward-line))
           found)))))
 
+
+
+;; Automatically register the backend and add ".got" to the exclusion
+;; list.
+
+;;;###autoload
+(add-to-list 'vc-handled-backends 'Got)
+
+;;;###autoload
+(add-to-list 'vc-directory-exclusion-list ".got")
+
 (provide 'vc-got)
 ;;; vc-got.el ends here
