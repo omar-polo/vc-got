@@ -1,7 +1,6 @@
 ;;; vc-got.el --- VC backend for Game of Trees VCS   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020, 2021 Omar Polo
-;; Copyright (C) 2020, 2021 Timo Myyrä
+;; Copyright (C) 2021  Free Software Foundation, Inc.
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
