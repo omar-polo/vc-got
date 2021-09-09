@@ -303,24 +303,6 @@ ROOT is the root of the repo."
     (?m 'edited) ; modified file modes
     (?N nil)))
 
-(defun vc-got--tree-parse ()
-  "Parse into an alist the output of got tree -i in the current buffer."
-  (goto-char (point-min))
-  (let (alist)
-    (while (re-search-forward "^\\([[:word:]]+\\) \\(?:.+\\)+$" nil t)
-      (push (cons (match-string 2) (match-string 1)) alist))
-    alist))
-
-(defun vc-got--tree (commit path)
-  "Return an alist representing the got tree command output.
-The outputted tree will be localised in the given PATH at the
-given COMMIT."
-  (vc-got-with-worktree path
-    (let ((process-file-side-effects nil))
-      (with-temp-buffer
-        (when (zerop (vc-got--call "tree" "-c" commit "-i" "--" path))
-          (vc-got--tree-parse))))))
-
 (defun vc-got--cat (commit obj-id)
   "Execute got cat -c COMMIT OBJ-ID in the current buffer."
   (let (process-file-side-effects)
@@ -606,10 +588,9 @@ Got uses an implicit checkout model for every file."
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
-  (when-let (obj-id (assoc file (vc-got--tree rev file) #'string=))
-    (with-current-buffer buffer
-      (vc-got-with-worktree file
-        (vc-got--cat rev obj-id)))))
+  (with-current-buffer buffer
+    (vc-got-with-worktree file
+      (vc-got--cat rev (file-relative-name file)))))
 
 (defun vc-got-checkout (_file &optional _rev)
   "Checkout revision REV of FILE.
