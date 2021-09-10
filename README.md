@@ -1,20 +1,14 @@
 # vc-got
 
 This is an Emacs VC back-end for the [Game of
-Tree](http://gameoftrees.org/) version control system.
+Tree](http://gameoftrees.org/) version control system
 
-------
+It's [available on ELPA][elpa]: to install it just `M-x package-install
+RET vc-got RET`; vc-got will register itself, there's no need to
+`require` it.
 
-To start using it make sure that `vc-got` is within your `load-path`
-and `Got` is in the `vc-handled-backends` list.
+[elpa]: http://elpa.gnu.org/packages/vc-got.html
 
-With `use-package` something like this should be enough:
-
-```emacs-lisp
-(use-package vc-got
-  :load-path "/path/to/vc-got/"
-  :defer t)
-```
 
 ## Drawbacks
 
@@ -29,8 +23,7 @@ should work with older versions.
 
 ## Contributing
 
-The long-term plan is to get this into Emacs (or ELPA at least).  This
-means that to avoid possible problems, a GNU copyright assignment is
-required.  It's really easy to get one (just send an email), and
-having one will allow you to make further contribution to Emacs itself
-or to various other packages.
+vc-got is on ELPA and thus a FSF copyright assignment is required.
+It's really easy to get one (just send an email), and having one will
+allow you to make further contribution to Emacs itself or to various
+other packages.
