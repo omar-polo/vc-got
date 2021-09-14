@@ -215,7 +215,7 @@ The output will be placed in the current buffer."
     (vc-got--call "add" vc-register-switches "--" files)))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
-                              search-pattern reverse)
+                              search-pattern reverse include-diff)
   "Execute the log command in the worktree of PATH in the current buffer.
 LIMIT limits the maximum number of commit returned.
 
@@ -223,6 +223,7 @@ START-COMMIT: start traversing history at the specified commit.
 STOP-COMMIT: stop traversing history at the specified commit.
 SEARCH-PATTERN: limit to log messages matched by the regexp given.
 REVERSE: display the log messages in reverse order.
+INCLUDE-DIFF: display the patch of modifications made in each commit.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
@@ -236,7 +237,8 @@ worktree."
                              (and stop-commit (list "-x" stop-commit))
                              (and search-pattern (list "-s" search-pattern))
                              (and reverse '("-R"))
-                             "--"
+                             (and include-diff '("-p"))
+                             ;; "--"
                              path)))
         (save-excursion
           (delete-matching-lines
@@ -742,22 +744,27 @@ Heavily inspired by `vc-git-log-view-mode'."
     (with-current-buffer buffer
       (vc-got-with-worktree (or (car files)
                                 default-directory)
-        (if (and (null rev1)
-                 (null rev2))
-            (dolist (file files)
-              (vc-got--diff file))
-          ;; TODO: if rev1 is nil, diff from the current version until
-          ;; rev2.
-          ;;
-          ;; TODO: if rev2 is nil as well, diff against an empty tree
-          ;; (i.e. get the patch from `got log -p rev1')
-          ;;
-          ;; TODO: it would be nice to optionally include FILES here,
-          ;; it would make the `=' key on the *Annotate* buffer do the
-          ;; right thing, but AFAICS got doesn't provide something
-          ;; like this.  Probably only hacking something with ``log
-          ;; -p'' and filtering?
-          (vc-got--diff rev1 rev2))))))
+        (cond ((and (null rev1)
+                    (null rev2))
+               (dolist (file files)
+                 (vc-got--diff file)))
+              ((and (null rev1)
+                    rev2)
+               ;; TODO: this includes the whole diff while to respect
+               ;; the vc semantics we should filter only the diff for
+               ;; files in FILES.
+               ;;
+               ;; XXX: this includes also the commit message, I
+               ;; consider it a feature over the usual vc behaviour of
+               ;; showing only the diff.
+               (vc-got--log nil 1 rev2 nil nil nil t))
+              ;;
+              ;; TODO: if rev1 is nil, diff from the current version until
+              ;; rev2.
+              ;;
+              ;; TODO 2: if rev2 is nil as well, diff against an empty
+              ;; tree (i.e. get the patch from `got log -p rev1')
+              (t (vc-got--diff rev1 rev2)))))))
 
 (defun vc-got-revision-completion-table (_files)
   "Return a completion table for existing revisions.
