@@ -801,7 +801,6 @@ Provides capture groups for:
 
 (defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
   "Regexp to match commit lines.
-
 Provides capture group for the commit revision id.")
 
 (defun vc-got-annotate-time ()
