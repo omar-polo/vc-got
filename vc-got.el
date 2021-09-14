@@ -806,15 +806,18 @@ Provides capture group for the commit revision id.")
 (defun vc-got-annotate-time ()
   "Return the time of the next line of annotation at or after point.
 Value is returned as floating point fractional number of days."
-  (save-excursion
-    (beginning-of-line)
-    (when (looking-at vc-got--annotate-re)
-      (let ((str (match-string-no-properties 2)))
-        (vc-annotate-convert-time
-         (encode-time 0 0 0
-                      (string-to-number (substring str 8 10))
-                      (string-to-number (substring str 5 7))
-                      (string-to-number (substring str 0 4))))))))
+  ;; XXX: to behave like vc-git here we should call re-search-forward
+  ;; instead of looking-at, as it makes the fontification of the line
+  ;; start AFTER the info.  The problem is, due to the format of the
+  ;; blame, it produces an ugly result, with colors starting at
+  ;; different offsets depending on how long the commiter name is.
+  (when (looking-at vc-got--annotate-re)
+    (let ((str (match-string-no-properties 2)))
+      (vc-annotate-convert-time
+       (encode-time 0 0 0
+                    (string-to-number (substring str 8 10))
+                    (string-to-number (substring str 5 7))
+                    (string-to-number (substring str 0 4)))))))
 
 (defun vc-got-annotate-extract-revision-at-line ()
   "Return revision corresponding to the current line or nil."
