@@ -1,5 +1,7 @@
 # vc-got
 
+[![elpa badge](https://elpa.gnu.org/packages/vc-got.svg)][elpa]
+
 This is an Emacs VC back-end for the [Game of
 Tree](http://gameoftrees.org/) version control system
 
