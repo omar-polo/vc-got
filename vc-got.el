@@ -322,7 +322,8 @@ ROOT is the root of the repo."
       (when (zerop (vc-got--call "branch" "-l"))
         (let (alist)
           (goto-char (point-min))
-          (while (re-search-forward "^\\* \\(.+\\): \\([[:word:]]+\\)$" nil t)
+          (while (re-search-forward "^\\*?[[:space:]]+\\(.+\\): \\([[:word:]]+\\)$"
+                                    nil t)
             (push (cons (match-string 1) (match-string 2)) alist))
           alist)))))
 
