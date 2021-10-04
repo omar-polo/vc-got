@@ -664,14 +664,12 @@ It's like `vc-process-filter' but supports \r inside S."
 ;; eventually a rebase.
 (defun vc-got-pull (prompt)
   "Execute a pull prompting for the full command if PROMPT is not nil."
-  (let ((default-directory (vc-got-root default-directory)))
-    (vc-got--push-pull vc-got-program "fetch" prompt)))
+  (vc-got--push-pull vc-got-program "fetch" prompt))
 
 (defun vc-got-push (prompt)
   "Run git push (not got!) in the repository dir.
 If PROMPT is non-nil, prompt for the git command to run."
-  (let ((default-directory (vc-got--repo-root)))
-    (vc-got--push-pull vc-got-program "send" prompt)))
+  (vc-got--push-pull vc-got-program "send" prompt))
 
 
 ;; History functions
