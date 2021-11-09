@@ -349,7 +349,7 @@ the specified PATHS."
              branch
              (buffer-string)))))
 
-(defun vc-got--diff-files (&rest files)
+(defun vc-got--diff-files (files)
   "Compute the local modifications to FILES."
   (let (process-file-side-effects)
     (zerop (vc-got--call "diff" (vc-switches 'got 'diff) "-P" "--"
@@ -749,7 +749,7 @@ Heavily inspired by `vc-git-log-view-mode'."
                                 default-directory)
         (cond ((and (null rev1)
                     (null rev2))
-               (apply #'vc-got--diff-files files))
+               (vc-got--diff-files files))
               ((and (null rev1)
                     rev2)
                ;; TODO: this includes the whole diff while to respect
