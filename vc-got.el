@@ -349,14 +349,18 @@ the specified PATHS."
              branch
              (buffer-string)))))
 
-(defun vc-got--diff (&rest files)
-  "Call got diff against FILES.
-The result will be stored in the current buffer."
+(defun vc-got--diff-files (&rest files)
+  "Compute the local modifications to FILES."
   (let (process-file-side-effects)
-    (zerop (vc-got--call "diff"
-                         (vc-switches 'got 'diff)
-                         "--"
-                         (mapcar #'file-relative-name files)))))
+    (zerop (vc-got--call "diff" (vc-switches 'got 'diff) "-P" "--"
+                         files))))
+
+(defun vc-got--diff-objects (obj1 obj2)
+  "Diff the two objects OBJ1 and OBJ2.
+OBJ1 and OBJ2 are interpreted as a reference, tag name, or an
+object ID SHA1 hash."
+  (let (process-file-side-effects)
+    (zerop (vc-got--call "diff" (vc-switches 'got 'diff) "--" obj1 obj2))))
 
 (defun vc-got--unstage (file-or-directory)
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
@@ -745,8 +749,7 @@ Heavily inspired by `vc-git-log-view-mode'."
                                 default-directory)
         (cond ((and (null rev1)
                     (null rev2))
-               (dolist (file files)
-                 (vc-got--diff file)))
+               (apply #'vc-got--diff-files files))
               ((and (null rev1)
                     rev2)
                ;; TODO: this includes the whole diff while to respect
@@ -763,7 +766,7 @@ Heavily inspired by `vc-git-log-view-mode'."
               ;;
               ;; TODO 2: if rev2 is nil as well, diff against an empty
               ;; tree (i.e. get the patch from `got log -p rev1')
-              (t (vc-got--diff rev1 rev2)))))))
+              (t (vc-got--diff-objects rev1 rev2)))))))
 
 (defun vc-got-revision-completion-table (_files)
   "Return a completion table for existing revisions.
