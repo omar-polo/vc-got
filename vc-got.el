@@ -515,7 +515,6 @@ FILES is nil, consider all the files in DIR."
       'mouse-face 'highlight
       'keymap (vc-got--with-emacs-version<= "28.0.50"
                 vc-dir-status-mouse-map))
-
      "   " (propertize
             (if stage-state
                 (format "%c" stage-state)
@@ -795,7 +794,6 @@ revisions''; instead, like with git, you have tags and branches."
           "\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) " ; year-mm-dd
           "\\([^ ]\\)+ ")    ; author
   "Regexp to match annotation output lines.
-
 Provides capture groups for:
 1. revision id
 2. date of commit
@@ -812,7 +810,7 @@ Value is returned as floating point fractional number of days."
   ;; instead of looking-at, as it makes the fontification of the line
   ;; start AFTER the info.  The problem is, due to the format of the
   ;; blame, it produces an ugly result, with colors starting at
-  ;; different offsets depending on how long the commiter name is.
+  ;; different offsets depending on how long the committer name is.
   (when (looking-at vc-got--annotate-re)
     (let ((str (match-string-no-properties 2)))
       (vc-annotate-convert-time
