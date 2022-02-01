@@ -645,9 +645,6 @@ It's like `vc-process-filter' but supports \r inside S."
                         " " t)
                      (list cmd op)))
       (apply #'vc-do-async-command buffer default-directory cmd)
-      ;; this comes from vc-git.el.  We're using git to push, so in
-      ;; part it makes sense, but we should revisit for full Got
-      ;; support.
       (with-current-buffer buffer
         (vc-compilation-mode 'got)
         (let ((comp-cmd (mapconcat #'identity cmd " "))
