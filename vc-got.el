@@ -660,8 +660,8 @@ It's like `vc-process-filter' but supports \r inside S."
       (vc-set-async-update buffer))))
 
 ;; TODO: this could be expanded.  After a pull the worktree needs to
-;; be updated, either with a ``got update -b branch-name'' and
-;; eventually a rebase.
+;; be updated, either with a ``got update -b branch-name'' or ``got
+;; update -b remote/branchname'' plus a rebase.
 (defun vc-got-pull (prompt)
   "Execute a pull prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "fetch" prompt))
