@@ -699,7 +699,8 @@ START-REVISION."
       (vc-got--log nil nil nil rl))))
 
 (defun vc-got-incoming (buffer remote-location)
-  "Fill BUFFER with the diff between the REMOTE-LOCATION and the local worktree branch."
+  "Fill BUFFER with the incoming diff from REMOTE-LOCATION.
+That is, the diff between REMOTE-LOCATION and the local repository."
   (let ((rl (if (or (not remote-location) (string-empty-p remote-location))
                 (concat "origin/" (vc-got--current-branch))
               remote-location))
