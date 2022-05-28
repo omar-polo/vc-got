@@ -24,9 +24,9 @@
 
 ;;; Commentary:
 
-;; This file contains a VC backend for the Game of Trees (got) version
-;; control system.
-
+;; vc-got is a VC backend for the Game of Trees (got) version control
+;; system.
+;;
 ;; Backend implementation status
 ;;
 ;; Function marked with `*' are required, those with `-' are optional.
@@ -118,6 +118,8 @@
 ;; - conflicted-files                   DONE
 ;; - repository-url                     DONE
 
+;;; Code:
+
 ;; TODO: vc-git has most function that starts with:
 ;;
 ;;    (let* ((root (vc-git-root default-directory))
@@ -127,8 +129,6 @@
 ;;
 ;; we should 1) investigate if also other backends do something like
 ;; this (or if there is a better way) and 2) try to do the same.
-
-;;; Code:
 
 (eval-when-compile
   (require 'subr-x))
