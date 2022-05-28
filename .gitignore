@@ -1,1 +1,3 @@
 *.elc
+/vc-got-autoloads.el
+/vc-got-pkg.el
