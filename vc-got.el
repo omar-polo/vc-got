@@ -4,7 +4,7 @@
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
-;; URL: https://git.omarpolo.com/vc-got/
+;; URL: https://projects.omarpolo.com/vc-got.html
 ;; Keywords: vc tools
 ;; Version: 1.1
 ;; Package-Requires: ((emacs "25.1"))
