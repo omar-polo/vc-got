@@ -1,6 +1,6 @@
 ;;; vc-got.el --- VC backend for Game of Trees VCS   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2022  Free Software Foundation, Inc.
 
 ;; Author: Omar Polo <op@omarpolo.com>
 ;;         Timo Myyrä <timo.myyra@bittivirhe.fi>
@@ -401,10 +401,9 @@ files on disk."
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
       (with-temp-buffer
-        (if (zerop (vc-got--call "branch" "--" name))
-            t
-          (error "[vc-got] can't create branch %s: %s" name
-                 (buffer-string)))))))
+        (or (zerop (vc-got--call "branch" "--" name))
+            (error "[vc-got] can't create branch %s: %s" name
+                   (buffer-string)))))))
 
 
 ;; Backend properties
@@ -432,8 +431,7 @@ files on disk."
       nil                               ; got doesn't track directories
     (when (vc-find-root file ".got")
       (let ((s (vc-got-state file)))
-        (not (or (eq s 'unregistered)
-                 (null s)))))))
+        (not (memq s '(nil unregistered)))))))
 
 (defun vc-got-state (file)
   "Return the current version control state of FILE.  See `vc-state'."
