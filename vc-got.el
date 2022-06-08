@@ -178,12 +178,21 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
   (when (version<= version emacs-version)
     `(progn ,@body)))
 
-(defun vc-got--program-version ()
+(defun vc-got--version ()
   "Return string representing the got version."
   (let (process-file-side-effects)
     (with-temp-buffer
       (vc-got--call "-V")
       (substring (buffer-string) 4 -1))))
+
+(defun vc-got--version<= (target)
+  "Compare the current version against TARGET.
+Takes care of handling the -current suffix."
+  (let* ((version-string (vc-got--version))
+         (current-version (string-replace "-current" "" version-string)))
+    (when (version<= current-version target)
+      ;; let X.Y-current sort *after* X.Y
+      (string= version-string current-version))))
 
 (defun vc-got-root (file)
   "Return the work tree root for FILE, or nil."
@@ -227,7 +236,13 @@ INCLUDE-DIFF: display the patch of modifications made in each commit.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
-  (let ((process-file-side-effects nil))
+  (let* ((process-file-side-effects nil)
+         ;; got 0.71-current at some point switched to -S for search
+         ;; pattern and -s for the one-line format.
+         ;; XXX: remove in a few releases.
+         (search-flag (if (vc-got--version<= "0.71")
+                          "-s"
+                        "-S")))
     (vc-got-with-worktree (or path default-directory)
       (when (zerop
              (save-excursion
@@ -235,7 +250,8 @@ worktree."
                              (and limit (list "-l" (format "%s" limit)))
                              (and start-commit (list "-c" start-commit))
                              (and stop-commit (list "-x" stop-commit))
-                             (and search-pattern (list "-s" search-pattern))
+                             (and search-pattern (list search-flag
+                                                       search-pattern))
                              (and reverse '("-R"))
                              (and include-diff '("-p"))
                              ;; "--"
