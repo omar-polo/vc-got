@@ -691,8 +691,8 @@ It's like `vc-process-filter' but supports \r inside S."
   "Insert the revision log for FILES into BUFFER.
 LIMIT limits the number of commits, optionally starting at
 START-REVISION."
+  (vc-setup-buffer buffer)
   (with-current-buffer buffer
-    ;; the *vc-diff* may be read only
     (let ((inhibit-read-only t))
       (cl-loop for file in files
                do (vc-got--log (file-relative-name file)
