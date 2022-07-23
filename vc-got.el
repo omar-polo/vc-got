@@ -695,10 +695,10 @@ START-REVISION."
   (with-current-buffer buffer
     (let ((worktree-path (vc-got-root default-directory))
           (inhibit-read-only t))
-      (cl-loop for file in files
-               do (vc-got--log (file-relative-name file worktree-path)
-                               limit
-                               start-revision)))))
+      (dolist (file files)
+        (vc-got--log (file-relative-name file worktree-path)
+                     limit
+                     start-revision)))))
 
 (defun vc-got-log-outgoing (buffer remote-location)
   "Fill BUFFER with the diff between the local worktree branch and REMOTE-LOCATION."
