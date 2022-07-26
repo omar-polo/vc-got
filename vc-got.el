@@ -600,7 +600,9 @@ Got uses an implicit checkout model for every file."
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
     (unless (zerop (vc-got--call "commit" "-m"
-                                 (log-edit-extract-headers nil comment)
+                                 (log-edit-extract-headers
+                                  '(("Author" . "-A"))
+                                  comment)
                                  "--"
                                  files))
       (error "[vc-got] can't commit: %s" (buffer-string)))))
