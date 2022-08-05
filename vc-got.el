@@ -223,6 +223,13 @@ The output will be placed in the current buffer."
   (with-temp-buffer
     (vc-got--call "add" vc-register-switches "--" files)))
 
+(defun vc-got--info (path)
+  "Execute got info in the worktree of PATH in the current buffer."
+  (let* ((process-file-side-effects nil))
+    (vc-got-with-worktree path
+      (zerop (save-excursion
+               (vc-got--call "info" "--" path))))))
+
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff)
   "Execute the log command in the worktree of PATH in the current buffer.
@@ -552,21 +559,12 @@ FILES is nil, consider all the files in DIR."
 
 (defun vc-got-working-revision (file)
   "Return the last commit that touched FILE or \"0\" if it's newly added."
-  (or
-   (with-temp-buffer
-     (when (vc-got--log file 1)
-       (let (start)
-         (goto-char (point-min))
-         (forward-word)                 ; skip "commit"
-         (forward-char)                 ; skip the space
-         (setq start (point))           ; store start of the SHA
-         (forward-word)                 ; goto SHA end
-         (buffer-substring start (point)))))
-   ;; special case: if this file is added but has no previous commits
-   ;; touching it, got log will fail (as expected), but we have to
-   ;; return "0".
-   (when (eq (vc-got-state file) 'added)
-     "0")))
+  (with-temp-buffer
+    (when (vc-got--info file)
+      (let ((pos (re-search-forward "^based on commit: " nil t)))
+        (if pos
+            (buffer-substring-no-properties pos (line-end-position))
+          "0")))))
 
 (defun vc-got-checkout-model (_files)
   "Return the checkout model.
