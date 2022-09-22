@@ -322,7 +322,7 @@ ROOT is the root of the repo."
     (?D 'removed)
     (?C 'conflict)
     (?! 'missing)
-    (?~ 'edited) ; XXX: what does it means for a file to be ``obstructed''?
+    (?~ 'edited) ; file was replaced by e.g. a directory
     (?? 'unregistered)
     (?m 'edited) ; modified file modes
     (?N nil)))
