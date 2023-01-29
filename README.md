@@ -15,7 +15,7 @@ RET vc-got RET`; vc-got will register itself, there's no need to
 ## Drawbacks
 
 While I've been using this backend on a daily basis for the last
-months, there are some rough edges.  Fetching updates in particular is
+years, there are some rough edges.  Fetching updates in particular is
 one action that *at the moment* is better to do by hand.  Pushing,
 committing, blaming etc on the other hand are fully functional.
 
