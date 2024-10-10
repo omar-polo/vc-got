@@ -194,6 +194,15 @@ Takes care of handling the -current suffix."
       ;; let X.Y-current sort *after* X.Y
       (string= version-string current-version))))
 
+(defun vc-got-command (buffer okstatus file-or-list &rest flags)
+  "A wrapper around `vc-do-command' for use in vc-got.el.
+The difference to `vc-do-command' is that this function always invokes
+`vc-got-program'."
+  (let ((process-environment process-environment))
+    (apply #'vc-do-command (or buffer "*vc*") okstatus vc-got-program
+           file-or-list
+           flags)))
+
 (defun vc-got-root (file)
   "Return the work tree root for FILE, or nil."
   (vc-find-root file ".got"))
