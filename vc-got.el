@@ -293,7 +293,7 @@ files)."
       (goto-char (point-min))
       (cl-loop until (eobp)
                collect (vc-got--parse-status-line root)
-               do (forward-line))))))
+               do (forward-line)))))
 
 (defun vc-got--parse-status-line (root)
   "Parse a line of the the output of status.
