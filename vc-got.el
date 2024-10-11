@@ -230,14 +230,13 @@ The output will be placed in the current buffer."
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
   (with-temp-buffer
-    (vc-got--call "add" vc-register-switches "--" files)))
+    (vc-got-command t 0 files "add" vc-register-switches)))
 
 (defun vc-got--info (path)
   "Execute got info in the worktree of PATH in the current buffer."
-  (let* ((process-file-side-effects nil))
+  (let (process-file-side-effects)
     (vc-got-with-worktree path
-      (zerop (save-excursion
-               (vc-got--call "info" "--" path))))))
+      (vc-got-command t 0 path "info"))))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff)
@@ -260,22 +259,19 @@ worktree."
                           "-s"
                         "-S")))
     (vc-got-with-worktree (or path default-directory)
-      (when (zerop
-             (save-excursion
-               (vc-got--call "log"
-                             (and limit (list "-l" (format "%s" limit)))
+      (save-excursion
+        (apply #'vc-got-command t 0 path "log"
+               (mapcan (lambda (x)
+                         (if (listp x) x nil))
+                       (list (and limit (list "-l" (format "%s" limit)))
                              (and start-commit (list "-c" start-commit))
                              (and stop-commit (list "-x" stop-commit))
                              (and search-pattern (list search-flag
                                                        search-pattern))
                              (and reverse '("-R"))
-                             (and include-diff '("-p"))
-                             ;; "--"
-                             path)))
-        (save-excursion
-          (delete-matching-lines
-           "^-----------------------------------------------$")
-          t)))))
+                             (and include-diff '("-p")))))
+          t))))
+
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists (FILE STATUS STAGE-STATUS).
@@ -292,14 +288,12 @@ files)."
                                  (file-name-directory dir-or-file))))
            (root (vc-got-root default-directory))
            (process-file-side-effects))
-      (when (zerop (vc-got--call "status"
-                                 (and status-codes (list "-s" status-codes))
-                                 "--"
-                                 (or files dir-or-file)))
-        (goto-char (point-min))
-        (cl-loop until (eobp)
-                 collect (vc-got--parse-status-line root)
-                 do (forward-line))))))
+      (apply #'vc-got-command t 0 (or files dir-or-file)
+             "status" (and status-codes (list "-s" status-codes)))
+      (goto-char (point-min))
+      (cl-loop until (eobp)
+               collect (vc-got--parse-status-line root)
+               do (forward-line))))))
 
 (defun vc-got--parse-status-line (root)
   "Parse a line of the the output of status.
@@ -339,25 +333,25 @@ ROOT is the root of the repo."
 (defun vc-got--cat (commit obj-id)
   "Execute got cat -c COMMIT OBJ-ID in the current buffer."
   (let (process-file-side-effects)
-    (zerop (vc-got--call "cat" "-c" commit obj-id))))
+    (vc-got-command t 0 nil "cat" "-c" commit obj-id)))
 
 (defun vc-got--revert (&rest files)
   "Execute got revert FILES."
   (vc-got-with-worktree (car files)
     (with-temp-buffer
-      (zerop (vc-got--call "revert" "--" files)))))
+      (vc-got-command t 0 files "revert"))))
 
 (defun vc-got--list-branches ()
   "Return an alist of (branch . commit)."
   (let (process-file-side-effects)
     (with-temp-buffer
-      (when (zerop (vc-got--call "branch" "-l"))
-        (let (alist)
-          (goto-char (point-min))
-          (while (re-search-forward "^\\*?[[:space:]]+\\(.+\\): \\([[:word:]]+\\)$"
-                                    nil t)
-            (push (cons (match-string 1) (match-string 2)) alist))
-          alist)))))
+      (vc-got-command t 0 nil "branch" "-l")
+      (let (alist)
+        (goto-char (point-min))
+        (while (re-search-forward "^\\*?[[:space:]]+\\(.+\\): \\([[:word:]]+\\)$"
+                                  nil t)
+          (push (cons (match-string 1) (match-string 2)) alist))
+        alist))))
 
 (defun vc-got--current-branch ()
   "Return the current branch."
@@ -369,7 +363,7 @@ ROOT is the root of the repo."
 (defun vc-got--integrate (branch)
   "Integrate BRANCH into the current one."
   (with-temp-buffer
-    (zerop (vc-got--call "integrate" branch))))
+    (vc-got-command t 0 nil "integrate" branch)))
 
 (defun vc-got--update (branch &optional paths)
   "Update to a different commit or BRANCH.
@@ -384,21 +378,20 @@ the specified PATHS."
 (defun vc-got--diff-files (files)
   "Compute the local modifications to FILES."
   (let (process-file-side-effects)
-    (zerop (vc-got--call "diff" (vc-switches 'got 'diff) "-P" "--"
-                         files))))
+    (vc-got-command t 0 files "diff" (vc-switches 'got 'diff) "-P")))
 
 (defun vc-got--diff-objects (obj1 obj2)
   "Diff the two objects OBJ1 and OBJ2.
 OBJ1 and OBJ2 are interpreted as a reference, tag name, or an
 object ID SHA1 hash."
   (let (process-file-side-effects)
-    (zerop (vc-got--call "diff" (vc-switches 'got 'diff) "--" obj1 obj2))))
+    (vc-got-command t 0 nil "diff" (vc-switches 'got 'diff) "--" obj1 obj2)))
 
 (defun vc-got--unstage (file-or-directory)
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
 If it's nil, unstage every staged changes across the entire work
 tree."
-  (zerop (vc-got--call "unstage" "--" file-or-directory)))
+  (vc-got-command t 0 file-or-directory "unstage"))
 
 (defun vc-got--remove (file &optional force keep-local)
   "Use got to remove FILE.
@@ -407,11 +400,9 @@ local modification.  If KEEP-LOCAL is non-nil keep the affected
 files on disk."
   (vc-got-with-worktree (or file default-directory)
     (with-temp-buffer
-      (zerop (vc-got--call "remove"
-                           (and force "-f")
-                           (and keep-local "-k")
-                           "--"
-                           file)))))
+      (vc-got-command t 0 file "remove"
+                      (and force "-f")
+                      (and keep-local "-k")))))
 
 (defun vc-got--ref ()
   "Return a list of all references."
@@ -422,20 +413,19 @@ files on disk."
         (table (list "HEAD")))
     (vc-got-with-worktree default-directory
       (with-temp-buffer
-        (when (zerop (vc-got--call "ref" "-l"))
-          (goto-char (point-min))
-          (while (re-search-forward re nil t)
-            (push (match-string 2) table))
-          table)))))
+        (vc-got-command t 0 nil "ref" "-l")
+        (goto-char (point-min))
+        (while (re-search-forward re nil t)
+          (push (match-string 2) table))
+        table))))
 
 (defun vc-got--branch (name)
   "Try to create and switch to the branch called NAME."
+  ;; TODO: does branch change files or does it require update
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
       (with-temp-buffer
-        (or (zerop (vc-got--call "branch" "--" name))
-            (error "[vc-got] can't create branch %s: %s" name
-                   (buffer-string)))))))
+        (vc-got-command t 0 nil "branch" name)))))
 
 
 ;; Backend properties
@@ -472,6 +462,7 @@ files on disk."
       ;; Manually calling got status and checking the result inline to
       ;; avoid building the data structure in vc-got--status.
       (with-temp-buffer
+        ;; too noisy to use: (vc-got-command t nil file "status"))
         (when (zerop (vc-got--call "status" "--" file))
           (goto-char (point-min))
           (if (eobp)
@@ -491,7 +482,7 @@ files on disk."
 The builded result is given to the callback UPDATE-FUNCTION.  If
 FILES is nil, consider all the files in DIR."
   (let* ((fs (vc-got--dir-filter-files (or files (directory-files dir))))
-         ;; XXX: we call with files, wich will probably be nil on the
+         ;; XXX: we call with files, which will probably be nil on the
          ;; first run, so we catch deleted, missing and edited files
          ;; in subdirectories.
          (res (vc-got--status nil dir files))
@@ -606,13 +597,12 @@ Got uses an implicit checkout model for every file."
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (with-temp-buffer
-    (unless (zerop (vc-got--call "commit" "-m"
-                                 (log-edit-extract-headers
-                                  '(("Author" . "-A"))
-                                  comment)
-                                 "--"
-                                 files))
-      (error "[vc-got] can't commit: %s" (buffer-string)))))
+    (vc-got-command t 0 files
+                    "commit" "-m"
+                    (log-edit-extract-headers
+                     '(("Author" . "-A"))
+                     comment))))
+
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
@@ -805,10 +795,8 @@ revisions''; instead, like with git, you have tags and branches."
       ;; by got unless vc-parent-buffer points to a buffer managed by got.
       ;; investigate why this is needed.
       (setq-local vc-parent-buffer (find-file-noselect file))
-      (vc-got--call "blame"
-                    (when rev (list "-c" rev))
-                    "--"
-                    file))))
+      (apply #'vc-got-command t 0 file "blame"
+             (when rev (list "-c" rev))))))
 
 (defconst vc-got--annotate-re
   (concat "^[0-9]\\{1,\\}) " ; line number followed by )
@@ -858,19 +846,18 @@ Creates the TAG using the content of the current buffer."
   (let ((msg (buffer-substring-no-properties (point-min)
                                              (point-max))))
     (with-temp-buffer
-      (unless (zerop (vc-got--call "tag"
-                                   "-m"
-                                   (log-edit-extract-headers nil msg)
-                                   "--"
-                                   tag))
-        (error "[vc-got] can't create tag %s: %s" tag (buffer-string))))))
+      (vc-got-command t 0 nil "tag"
+                      "-m"
+                      (log-edit-extract-headers nil msg)
+                      "--"
+                      tag))))
 
 (defun vc-got-create-tag (_dir name branchp)
   "Attach the tag NAME to the state of the worktree.
 DIR is ignored (tags are global, not per-file).  If BRANCHP is
 true, NAME should create a new branch otherwise it will pop-up a
 `log-edit' buffer to provide the tag message."
-  ;; TODO: vc reccomends to ensure that all the file are in a clean
+  ;; TODO: vc recommends to ensure that all of the files are in a clean
   ;; state, but is it useful?
   (if branchp
       (vc-got--branch name)
