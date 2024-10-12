@@ -270,6 +270,8 @@ worktree."
                                                        search-pattern))
                              (and reverse '("-R"))
                              (and include-diff '("-p")))))
+        (delete-matching-lines
+         "^-----------------------------------------------$")
           t))))
 
 
