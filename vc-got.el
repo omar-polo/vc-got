@@ -592,7 +592,7 @@ Got uses an implicit checkout model for every file."
 
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
-  (vc-got-command nil 0 files
+  (apply #'vc-got-command nil 0 files
                   "commit" "-m"
                   (log-edit-extract-headers
                    '(("Author" . "-A"))
