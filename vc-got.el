@@ -229,8 +229,7 @@ The output will be placed in the current buffer."
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
-  (with-temp-buffer
-    (vc-got-command t 0 files "add" vc-register-switches)))
+  (vc-got-command nil 0 files "add" vc-register-switches))
 
 (defun vc-got--info (path)
   "Execute got info in the worktree of PATH in the current buffer."
@@ -340,8 +339,7 @@ ROOT is the root of the repo."
 (defun vc-got--revert (&rest files)
   "Execute got revert FILES."
   (vc-got-with-worktree (car files)
-    (with-temp-buffer
-      (vc-got-command t 0 files "revert"))))
+    (vc-got-command nil 0 files "revert")))
 
 (defun vc-got--list-branches ()
   "Return an alist of (branch . commit)."
@@ -364,8 +362,7 @@ ROOT is the root of the repo."
 
 (defun vc-got--integrate (branch)
   "Integrate BRANCH into the current one."
-  (with-temp-buffer
-    (vc-got-command t 0 nil "integrate" branch)))
+  (vc-got-command nil 0 nil "integrate" branch))
 
 (defun vc-got--update (branch &optional paths)
   "Update to a different commit or BRANCH.
@@ -393,7 +390,7 @@ object ID SHA1 hash."
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
 If it's nil, unstage every staged changes across the entire work
 tree."
-  (vc-got-command t 0 file-or-directory "unstage"))
+  (vc-got-command nil 0 file-or-directory "unstage"))
 
 (defun vc-got--remove (file &optional force keep-local)
   "Use got to remove FILE.
@@ -401,10 +398,9 @@ If FORCE is non-nil perform the operation even if a file contains
 local modification.  If KEEP-LOCAL is non-nil keep the affected
 files on disk."
   (vc-got-with-worktree (or file default-directory)
-    (with-temp-buffer
-      (vc-got-command t 0 file "remove"
-                      (and force "-f")
-                      (and keep-local "-k")))))
+    (vc-got-command nil 0 file "remove"
+                    (and force "-f")
+                    (and keep-local "-k"))))
 
 (defun vc-got--ref ()
   "Return a list of all references."
@@ -423,11 +419,9 @@ files on disk."
 
 (defun vc-got--branch (name)
   "Try to create and switch to the branch called NAME."
-  ;; TODO: does branch change files or does it require update
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
-      (with-temp-buffer
-        (vc-got-command t 0 nil "branch" name)))))
+      (vc-got-command nil 0 nil "branch" name))))
 
 
 ;; Backend properties
@@ -598,6 +592,12 @@ Got uses an implicit checkout model for every file."
 
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
+  (vc-got-command nil 0 files
+                  "commit" "-m"
+                  (log-edit-extract-headers
+                   '(("Author" . "-A"))
+                   comment)))
+
   (with-temp-buffer
     (vc-got-command t 0 files
                     "commit" "-m"
@@ -797,7 +797,7 @@ revisions''; instead, like with git, you have tags and branches."
       ;; by got unless vc-parent-buffer points to a buffer managed by got.
       ;; investigate why this is needed.
       (setq-local vc-parent-buffer (find-file-noselect file))
-      (apply #'vc-got-command t 0 file "blame"
+      (apply #'vc-got-command buf 0 file "blame"
              (when rev (list "-c" rev))))))
 
 (defconst vc-got--annotate-re
@@ -847,12 +847,11 @@ Creates the TAG using the content of the current buffer."
   (interactive)
   (let ((msg (buffer-substring-no-properties (point-min)
                                              (point-max))))
-    (with-temp-buffer
-      (vc-got-command t 0 nil "tag"
-                      "-m"
-                      (log-edit-extract-headers nil msg)
-                      "--"
-                      tag))))
+    (vc-got-command nil 0 nil "tag"
+                    "-m"
+                    (log-edit-extract-headers nil msg)
+                    "--"
+                    tag)))
 
 (defun vc-got-create-tag (_dir name branchp)
   "Attach the tag NAME to the state of the worktree.
