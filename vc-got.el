@@ -229,7 +229,7 @@ The output will be placed in the current buffer."
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
-  (vc-got-command nil 0 files "add" vc-register-switches))
+  (apply #'vc-got-command nil 0 files "add" vc-register-switches))
 
 (defun vc-got--info (path)
   "Execute got info in the worktree of PATH in the current buffer."
@@ -377,14 +377,16 @@ the specified PATHS."
 (defun vc-got--diff-files (files)
   "Compute the local modifications to FILES."
   (let (process-file-side-effects)
-    (vc-got-command t 0 files "diff" (vc-switches 'got 'diff) "-P")))
+    (apply #'vc-got-command t 0 files "diff" "-P" (vc-switches 'got 'diff))))
 
 (defun vc-got--diff-objects (obj1 obj2)
   "Diff the two objects OBJ1 and OBJ2.
 OBJ1 and OBJ2 are interpreted as a reference, tag name, or an
 object ID SHA1 hash."
   (let (process-file-side-effects)
-    (vc-got-command t 0 nil "diff" (vc-switches 'got 'diff) "--" obj1 obj2)))
+    (apply #'vc-got-command t 0 nil "diff"
+           (append (vc-switches 'got 'diff)
+                   (list "--" obj1 obj2)))))
 
 (defun vc-got--unstage (file-or-directory)
   "Unstage all the staged hunks at or within FILE-OR-DIRECTORY.
@@ -398,9 +400,9 @@ If FORCE is non-nil perform the operation even if a file contains
 local modification.  If KEEP-LOCAL is non-nil keep the affected
 files on disk."
   (vc-got-with-worktree (or file default-directory)
-    (vc-got-command nil 0 file "remove"
-                    (and force "-f")
-                    (and keep-local "-k"))))
+    (apply #'vc-got-command nil 0 file "remove"
+           (list (and force "-f")
+                 (and keep-local "-k")))))
 
 (defun vc-got--ref ()
   "Return a list of all references."
@@ -839,11 +841,12 @@ Creates the TAG using the content of the current buffer."
   (interactive)
   (let ((msg (buffer-substring-no-properties (point-min)
                                              (point-max))))
-    (vc-got-command nil 0 nil "tag"
-                    "-m"
-                    (log-edit-extract-headers nil msg)
+    (apply #'vc-got-command nil 0 nil "tag"
+           "-m"
+           (append (log-edit-extract-headers nil msg)
+                   (list
                     "--"
-                    tag)))
+                    tag)))))
 
 (defun vc-got-create-tag (_dir name branchp)
   "Attach the tag NAME to the state of the worktree.
