@@ -598,14 +598,6 @@ Got uses an implicit checkout model for every file."
                    '(("Author" . "-A"))
                    comment)))
 
-  (with-temp-buffer
-    (vc-got-command t 0 files
-                    "commit" "-m"
-                    (log-edit-extract-headers
-                     '(("Author" . "-A"))
-                     comment))))
-
-
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
   (with-current-buffer buffer
