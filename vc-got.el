@@ -573,7 +573,8 @@ Got uses an implicit checkout model for every file."
   "Return the VC mode line string for FILE."
   (vc-got-with-worktree file
     (let ((def (vc-default-mode-line-string 'Got file)))
-      (concat (substring def 0 4) (vc-got--current-branch)))))
+      (concat (substring def 0 (min (length def) 4))
+              (vc-got--current-branch)))))
 
 
 ;; state-changing functions
