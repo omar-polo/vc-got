@@ -269,6 +269,7 @@ worktree."
                                                        search-pattern))
                              (and reverse '("-R"))
                              (and include-diff '("-p")))))
+        (goto-char (point-min))
         (delete-matching-lines
          "^-----------------------------------------------$")
           t))))
