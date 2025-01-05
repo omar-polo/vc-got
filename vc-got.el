@@ -640,7 +640,7 @@ If REV is t, checkout from the head."
 
 (defun vc-got--proc-filter (proc s)
   "Custom output filter for async process PROC.
-It's like `vc-process-filter' but supports \r inside S."
+It's like `vc-process-filter' but supports \\r inside S."
   (let ((buffer (process-buffer proc)))
     (when (buffer-live-p buffer)
       (with-current-buffer buffer
