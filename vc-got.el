@@ -235,7 +235,7 @@ The output will be placed in the current buffer."
   "Execute got info in the worktree of PATH in the current buffer."
   (let (process-file-side-effects)
     (vc-got-with-worktree path
-      (vc-got-command t 0 path "info"))))
+      (vc-got-command t nil path "info"))))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff)
@@ -559,7 +559,7 @@ FILES is nil, consider all the files in DIR."
 (defun vc-got-working-revision (file)
   "Return the last commit that touched FILE or \"0\" if it's newly added."
   (with-temp-buffer
-    (when (vc-got--info file)
+    (when (zerop (vc-got--info file))
       (let ((pos (re-search-forward "^based on commit: " nil t)))
         (if pos
             (buffer-substring-no-properties pos (line-end-position))
