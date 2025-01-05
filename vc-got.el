@@ -369,11 +369,23 @@ ROOT is the root of the repo."
   "Update to a different commit or BRANCH.
 Optionally restrict the update operation to files at or within
 the specified PATHS."
-  (with-temp-buffer
-    (unless (zerop (vc-got--call "update" "-b" branch "--" paths))
-      (error "[vc-got] can't update to branch %s: %s"
-             branch
-             (buffer-string)))))
+  (let ((buffer-name (format "*vc-got : %s*" (expand-file-name default-directory)))
+        (cmd-args (list "update" "-b" branch)))
+    (with-current-buffer buffer-name
+      (apply #'vc-do-async-command buffer-name paths vc-got-program
+             cmd-args)
+      (vc-compilation-mode 'got)
+      (let ((comp-cmd (mapconcat #'identity (cons vc-got-program cmd-args) " "))
+            (proc (get-buffer-process (current-buffer))))
+        (setq-local compile-command comp-cmd)
+        (setq-local compilation-directory default-directory)
+        (setq-local compilation-arguments (list cmd-args
+                                                nil
+                                                (lambda (_ign) (current-buffer))
+                                                nil))
+        ;; Setup a custom process filter that handles \r.
+        (set-process-filter proc #'vc-got--proc-filter))
+       (vc-set-async-update (current-buffer)))))
 
 (defun vc-got--diff-files (files)
   "Compute the local modifications to FILES."
