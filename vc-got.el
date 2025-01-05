@@ -632,11 +632,9 @@ If REV is t, checkout from the head."
 (defun vc-got-merge-branch ()
   "Prompt for a branch and integrate it into the current one."
   ;; XXX: be smart and try to "got rebase" if "got integrate" fails?
-  (let* ((branches (cl-loop for (branch . commit) in (vc-got--list-branches)
-                            collect branch))
-         (branch (completing-read "Merge from branch: " branches)))
-    (when branch
-      (vc-got--integrate branch))))
+  (when-let ((branch (completing-read "Merge from branch: "
+                                      (mapcar #'car (vc-got--list-branches)))))
+    (vc-got--integrate branch)))
 
 (defun vc-got--proc-filter (proc s)
   "Custom output filter for async process PROC.
