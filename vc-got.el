@@ -50,9 +50,7 @@
 ;; - mode-line-string                   DONE
 ;;
 ;; STATE-CHANGING FUNCTIONS:
-;; * create-repo                        NOT IMPLEMENTED
-;;      I don't think got init does what this function is supposed to
-;;      do.
+;; * create-repo                        DONE
 ;; * register                           DONE
 ;; - responsible-p                      DONE
 ;; - receive-file                       NOT NEEDED, default `register' is fine
@@ -169,6 +167,18 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
   :type '(choice (const :tag "Unspecified" nil)
                  (const :tag "None" t)
                  (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-create-repo-init-switches nil
+  "String or list of strings specifying switches for `got init' when
+running `vc-create-repo'."
+  :type '(choice (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-create-repo-import-switches nil
+  "String or list of strings specifying switches for `got import' when
+running `vc-create-repo'."
+  :type '(choice (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
 
 ;; helpers
@@ -459,6 +469,22 @@ files on disk."
 ;;;###autoload   (when (vc-find-root file ".got")
 ;;;###autoload     (load "vc-got" nil t)
 ;;;###autoload     (vc-got-registered file)))
+
+(defun vc-got-create-repo ()
+  "Creates an empty repository with `got init' in the current directory and
+populates it with files from a directory polled from user."
+  (let ((repo-directory (expand-file-name default-directory)))
+    (unless (directory-empty-p repo-directory)
+      (error "The new repository directory must be empty"))
+    (let ((import-directory (expand-file-name
+                             (read-directory-name "What directory to import from: "))))
+      (when (string= repo-directory import-directory)
+        (error "Cannot import the repo directory"))
+      (apply #'vc-got-command nil 0 repo-directory "init"
+             (ensure-list vc-got-create-repo-init-switches))
+      (apply #'vc-got-command t 'async import-directory "import"
+             (append (list "-m" (read-string "Message for import commit: "))
+                     (ensure-list vc-got-create-repo-import-switches))))))
 
 (defun vc-got-registered (file)
   "Return non-nil if FILE is registered with got."
