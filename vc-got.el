@@ -35,7 +35,8 @@
 ;;
 ;; BACKEND PROPERTIES:
 ;; * revision-granularity               DONE
-;; - update-on-retrieve-tag             XXX: what should this do?
+;; - update-on-retrieve-tag             DONE
+;; - async-checkins                     DONE
 ;;
 ;; STATE-QUERYING FUNCTIONS:
 ;; * registered                         DONE
@@ -274,6 +275,7 @@ worktree."
          "^-----------------------------------------------$")
           t))))
 
+(defalias 'vc-got-async-checkins #'ignore)
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists (FILE STATUS STAGE-STATUS).
