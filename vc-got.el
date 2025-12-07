@@ -68,6 +68,7 @@
 ;; - pull                               DONE
 ;; - push                               DONE (removed in emacs-git vc?)
 ;; - steal-lock                         NOT NEEDED, `got' is not using locks
+;; - get-change-comment                 DONE
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
 ;;      what it is supposed to do.
@@ -764,6 +765,19 @@ It's like `vc-process-filter' but supports \\r inside S."
 (defun vc-got-push (prompt)
   "Execute a send prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "send" prompt))
+
+(defun vc-got-get-change-comment (_files rev)
+  "Return the change comments given REV.  The files argument is ignored."
+  (with-temp-buffer
+    (vc-got--log nil 1 rev)
+    (goto-char (point-min))
+    (forward-line 4)
+    (save-excursion
+      (while (not (eobp))
+        (delete-char 1)
+        (forward-line))
+      (delete-blank-lines))
+    (buffer-substring-no-properties (point) (point-max))))
 
 
 ;; History functions
