@@ -57,6 +57,7 @@
 ;; - receive-file                       NOT NEEDED, default `register' is fine
 ;; - unregister                         DONE
 ;; * checkin                            DONE
+;; * checkin-patch                      DONE
 ;; * find-revision                      DONE
 ;; * checkout                           DONE
 ;; * revert                             DONE
@@ -648,6 +649,26 @@ populates it with files from a directory polled from user."
                   (log-edit-extract-headers
                    '(("Author" . "-A"))
                    comment)))
+
+(defun vc-got-checkin-patch (patch-string comment)
+  "Commit PATCH-STRING with COMMENT to repository."
+  (let ((temp-patch-file (make-temp-file "got-patch")))
+    (unwind-protect
+        (let (files)
+          (with-temp-file temp-patch-file
+            (insert patch-string)
+            ;; heuristic to figure out what files are affected by the patch
+            (goto-char (point-min))
+            (while (re-search-forward "^file \+" nil t)
+              (forward-char 2)
+              (push (buffer-substring-no-properties (point) (line-end-position))
+                    files)))
+          ;; apply the patch to work tree
+          (vc-got-command nil 0 temp-patch-file "patch")
+          ;; commit the changed files
+          (vc-got-checkin files comment))
+      ;; delete the temp patch, no longer needed
+      (delete-file temp-patch-file))))
 
 (defun vc-got-find-revision (file rev buffer)
   "Fill BUFFER with the content of FILE in the given revision REV."
