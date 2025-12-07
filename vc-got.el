@@ -61,11 +61,12 @@
 ;; * find-revision                      DONE
 ;; * checkout                           DONE
 ;; * revert                             DONE
-;; - merge-file                         NOT IMPLEMENTED
+;; - revert-files                       DONE
+;; - merge-file                         NOT NEEDED, for non-distributed VCS
 ;; - merge-branch                       DONE
-;; - merge-news                         NOT IMPLEMENTED
+;; - merge-news                         NOT NEEDED, for non-distributed VCS
 ;; - pull                               DONE
-;; - push                               DONE
+;; - push                               DONE (removed in emacs-git vc?)
 ;; - steal-lock                         NOT NEEDED, `got' is not using locks
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;;      can be implemented via histedit, if I understood correctly
@@ -697,6 +698,10 @@ empty string, check out the head of the trunk."
 (defun vc-got-revert (file &optional _content-done)
   "Revert FILE back to working revision."
   (vc-got--revert file))
+
+(defun vc-got-revert-files (files)
+  "Mass-revert of FILES."
+  (apply #'vc-got--revert files))
 
 (defun vc-got-merge-branch ()
   "Prompt for a branch and integrate it into the current one."
