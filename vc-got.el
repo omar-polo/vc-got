@@ -703,12 +703,40 @@ empty string, check out the head of the trunk."
   "Mass-revert of FILES."
   (apply #'vc-got--revert files))
 
+(defun vc-got--merge (action &optional branch)
+  "Internal command for merging.  The ACTION determine the flags passed to
+merge.  Some actions take BRANCH argument."
+  (let ((args (cond ((eq action 'start)
+                     (list branch))
+                    ((eq action 'abort)
+                     '("-a"))
+                    ((eq action 'continue)
+                     '("-c"))
+                    ((eq action 'force)
+                     '("-c" "-C"))
+                    (t (error "Unknown action: %s" action)))))
+    (apply #'vc-got-command nil 0 nil "merge" args)))
+
 (defun vc-got-merge-branch ()
   "Prompt for a branch and integrate it into the current one."
+  (if (memq 'merge (vc-got--cmds-in-progress))
+      (when-let* ((action (completing-read "Merge in progress, what to do? "
+                                           '(abort continue force))))
+        (vc-got--merge action))
+    (when-let* ((branch (vc-got--prompt-branch "Merge with branch: ")))
+      (vc-got--merge 'start branch))))
+
+(defun vc-got-integrate ()
+  "Prompt for a branch and integrate it into the current one."
+  (interactive)
   ;; XXX: be smart and try to "got rebase" if "got integrate" fails?
-  (when-let ((branch (completing-read "Merge from branch: "
-                                      (mapcar #'car (vc-got--list-branches)))))
-    (vc-got--integrate branch)))
+  (when-let* ((branch (vc-got--prompt-branch "Integrate with branch: ")))
+    ;; we could add
+    ;; handle state changes: continue, force, abort
+    ;; `vc-got-integrate' as separate command.
+    (vc-got-command nil 0 nil "integrate" branch)
+    ;; TODO: add customization to delete branch after integration
+    ))
 
 (defun vc-got--proc-filter (proc s)
   "Custom output filter for async process PROC.
@@ -757,6 +785,7 @@ It's like `vc-process-filter' but supports \\r inside S."
 ;; TODO: this could be expanded.  After a pull the worktree needs to
 ;; be updated, either with a ``got update -b branch-name'' or ``got
 ;; update -b remote/branchname'' plus a rebase.
+;; TODO: can this handle prefix argument? pull does fetch, C-u pull does update?
 (defun vc-got-pull (prompt)
   "Execute a fetch prompting for the full command if PROMPT is not nil."
   (vc-got--push-pull vc-got-program "fetch" prompt))
