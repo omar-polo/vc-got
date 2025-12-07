@@ -70,11 +70,7 @@
 ;; - steal-lock                         NOT NEEDED, `got' is not using locks
 ;; - get-change-comment                 DONE
 ;; - modify-change-comment              NOT IMPLEMENTED
-;;      can be implemented via histedit, if I understood correctly
-;;      what it is supposed to do.
 ;; - mark-resolved                      NOT NEEDED
-;;      got notice by itself when a file doesn't have any pending
-;;      conflicts to be resolved.
 ;; - find-admin-dir                     NOT NEEDED
 ;;
 ;; HISTORY FUNCTIONS
