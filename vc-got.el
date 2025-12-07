@@ -48,6 +48,7 @@
 ;; * working-revision                   DONE
 ;; * checkout-model                     DONE
 ;; - mode-line-string                   DONE
+;; - known-other-working-trees          NOT IMPLEMENTED
 ;;
 ;; STATE-CHANGING FUNCTIONS:
 ;; * create-repo                        DONE
