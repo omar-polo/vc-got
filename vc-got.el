@@ -72,6 +72,9 @@
 ;; - modify-change-comment              NOT IMPLEMENTED
 ;; - mark-resolved                      NOT NEEDED
 ;; - find-admin-dir                     NOT NEEDED
+;; - add-working-tree                   DONE
+;; - delete-working-tree                DONE
+;; - move-working-tree                  DONE
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
@@ -774,6 +777,40 @@ It's like `vc-process-filter' but supports \\r inside S."
         (forward-line))
       (delete-blank-lines))
     (buffer-substring-no-properties (point) (point-max))))
+
+(defun vc-got--work-tree-uuid (&optional file)
+  "Returns the work tree UUID.  Uses the `default-directory' or given FILE
+to determine the work tree."
+  (with-temp-buffer
+    (when-let* ((root-dir (vc-got-root (or file default-directory))))
+      (insert-file-contents (expand-file-name ".got/uuid" root-dir))
+      (string-trim (buffer-string)))))
+
+(defun vc-got-add-working-tree (dir)
+  "Checkout a new work tree to DIR."
+  ;; NOTE: `got' tracks the work trees but not their locations, should
+  ;; we re-use the repo .got/refs/got/worktree/ directory to store the
+  ;; checkout directory? This would allow to implement
+  ;; `known-other-working-trees' to list known work trees and jump
+  ;; between them.
+  (when-let* ((branch (vc-got--prompt-branch "Create new work tree from branch: ")))
+    (vc-got-command nil 0 dir "checkout" "-b" branch)))
+
+(defun vc-got-delete-working-tree (dir)
+  "Delete a work tree in directory DIR."
+  (if-let* ((uuid (vc-got--work-tree-uuid dir)))
+      (with-temp-buffer
+        (vc-got-command t 0 (concat "refs/got/worktree/base-" uuid) "ref" "-d")
+        (delete-directory dir t))
+    (error "Directory %s is not a got work tree" dir)))
+
+(defun vc-got-move-working-tree (from to)
+  "Move `got' work tree FROM TO a new location."
+  (if (file-exists-p (expand-file-name ".got" from))
+      (progn
+        (copy-directory from to)
+        (delete-directory from))
+    (error "Directory %s is not a got work tree" from)))
 
 
 ;; History functions
