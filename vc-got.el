@@ -117,6 +117,7 @@
 ;; - repository-url                     DONE
 ;; - prepare-patch                      DONE
 ;; - clone                              DONE
+;; - cherry-pick-comment                DONE
 
 ;;; Code:
 
@@ -1049,6 +1050,33 @@ not support the REV argument."
   (apply #'vc-got-command nil 'async (list remote directory) "clone"
          (ensure-list vc-got-clone-switches))
   directory)
+
+(defun vc-got-cherry-pick-comment (_files rev reverse)
+  "Generate proper revision comment for cherry picked commit from REV.
+If the REVERSE is non-nil, generate message for reversing cherrypick.
+The _FILES argument is ignored."
+  (let (comment)
+    (with-temp-buffer
+      (vc-got--log nil 1 rev)
+      (goto-char (point-min))
+      (save-excursion
+        ;; get full commit hash
+        (when (re-search-forward vc-got--commit-re nil t)
+          (setq rev (match-string-no-properties 1))))
+      (forward-line 4)
+      ;; remove indent and parse the comment string
+      (save-excursion
+        (while (not (eobp))
+          (delete-char 1)
+          (forward-line))
+        (delete-blank-lines))
+      (setq comment (buffer-substring-no-properties (point) (point-max))))
+    (if reverse
+        (format "Summary: Revert \"%s\"\n\nThis reverts commit %s.\n"
+                (car (split-string comment "\n")) rev)
+      (format "Summary: %s\n(cherry picked from commit %s)\n"
+              comment rev))))
+
 
 
 ;; Automatically register the backend and add ".got" to the exclusion
