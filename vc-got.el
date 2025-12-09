@@ -75,8 +75,9 @@
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
-;; * log-outgoing                       DONE
-;; * log-incoming                       DONE
+;; * log-outgoing                       DONE (Deprecated)
+;; * log-incoming                       DONE (Deprecated)
+;; - incoming-revision                  DONE
 ;; - log-search                         DONE
 ;; - log-view-mode                      DONE
 ;; - show-log-entry                     NOT IMPLEMENTED
@@ -182,6 +183,13 @@ running `vc-create-repo'."
 running `vc-create-repo'."
   :type '(choice (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-incoming-revision-switches nil
+  "A string or list of strings specifying extra switches passed on for
+`vc-got-incoming-revision'."
+  :type '(choice (const :tag "None" nil)
+		 (string :tag "Argument String")
+		 (repeat :tag "Argument List" :value ("") string)))
 
 ;; helpers
 (defmacro vc-got--with-emacs-version<= (version &rest body)
@@ -750,6 +758,7 @@ START-REVISION."
                      limit
                      start-revision)))))
 
+;; NOTE: obsolete since emacs 31
 (defun vc-got-log-outgoing (buffer remote-location)
   "Fill BUFFER with the diff between the local worktree branch and REMOTE-LOCATION."
   (vc-setup-buffer buffer)
@@ -762,6 +771,7 @@ START-REVISION."
     (with-current-buffer buffer
       (vc-got--log nil nil nil rl))))
 
+;; NOTE: obsolete since emacs 31
 (defun vc-got-log-incoming (buffer remote-location)
   "Fill BUFFER with the incoming diff from REMOTE-LOCATION.
 That is, the diff between REMOTE-LOCATION and the local repository."
@@ -772,6 +782,40 @@ That is, the diff between REMOTE-LOCATION and the local repository."
         (inhibit-read-only t))
     (with-current-buffer buffer
       (vc-got--log nil nil (vc-got--current-branch) rl))))
+
+(defvar vc-got--last-pack-fetch (make-hash-table :test 'equal)
+  "Hash table of (remote . seconds) when repository fetch was triggered by VC.
+Used for caching the fetch results.")
+
+(defvar vc-got--last-fetch-timeout 3600
+  "How many seconds to wait between `got fetch' runs.")
+
+(defun vc-got-incoming-revision (upstream-location &optional refresh)
+  "Returns revision at the head of the branch at UPSTREAM-LOCATION.  If
+there is no such branch there, return nil.  The backend may rely on
+cached information from a previous fetch from UPSTREAM-LOCATION unless
+REFRESH is non-nil, which means that the most up-to-date information
+possible is required."
+  (let ((repository (vc-got--repo-root)))
+    (when (or refresh
+              ;; no fetches in this emacs session
+              (not (gethash repository vc-got--last-pack-fetch))
+              ;; last fetch was over the timeout ago
+              (> (- (string-to-number (format-time-string "%s" nil))
+                    (gethash repository vc-got--last-pack-fetch))
+                 vc-got--last-fetch-timeout))
+      (apply #'vc-got-command nil 0 nil "fetch"
+             (ensure-list vc-got-incoming-revision-switches))
+      (puthash repository (string-to-number (format-time-string "%s" nil))
+               vc-got--last-pack-fetch)))
+  (ignore-errors            ; in order to return nil if no such branch
+    (with-temp-buffer
+      (let ((start-commit (if (string-empty-p upstream-location)
+                              (concat "origin/" (vc-got--current-branch))
+                            upstream-location)))
+      (vc-got--log nil 1 start-commit)
+      (when-let* ((commit-line (re-search-forward vc-got--commit-re nil t)))
+        (match-string-no-properties 1))))))
 
 (defun vc-got-log-search (buffer pattern)
   "Search commits for PATTERN and write the results found in BUFFER."
