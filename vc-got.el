@@ -109,7 +109,7 @@
 ;; - log-edit-mode                      NOT NEEDED, defaults work ok for now
 ;; - check-headers                      NOT NEEDED, `got' does not use headers
 ;; - delete-file                        DONE
-;; - rename-file                        NOT IMPLEMENTED
+;; - rename-file                        DONE
 ;; - find-file-hook                     DONE
 ;; - extra-menu                         NOT IMPLEMENTED
 ;; - extra-dir-menu                     NOT IMPLEMENTED, same as above
@@ -973,6 +973,12 @@ true, NAME should create a new branch otherwise it will pop-up a
 (defun vc-got-delete-file (file)
   "Delete FILE locally and mark it deleted in work tree."
   (vc-got--remove file t))
+
+(defun vc-got-rename-file (old new)
+  "Rename file OLD to NEW."
+  (copy-file old new)
+  (vc-got-delete-file old)
+  (vc-got--add (list new)))
 
 (defun vc-got-find-file-hook ()
   "Activate `smerge-mode' if there is a conflict."
