@@ -836,9 +836,7 @@ to determine the work tree."
 (defun vc-got-move-working-tree (from to)
   "Move `got' work tree FROM TO a new location."
   (if (file-exists-p (expand-file-name ".got" from))
-      (progn
-        (copy-directory from to)
-        (delete-directory from))
+      (rename-file from to)
     (error "Directory %s is not a got work tree" from)))
 
 
