@@ -799,7 +799,8 @@ It's like `vc-process-filter' but supports \\r inside S."
   (with-temp-buffer
     (vc-got--log nil 1 rev)
     (goto-char (point-min))
-    (forward-line 4)
+    (forward-line 4) ; skip commit header
+    ;; remove one character indent
     (save-excursion
       (while (not (eobp))
         (delete-char 1)
