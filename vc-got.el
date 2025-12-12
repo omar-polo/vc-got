@@ -651,6 +651,14 @@ populates it with files from a directory polled from user."
                    '(("Author" . "-A"))
                    comment)))
 
+(defconst vc-got--commit-header-re
+  (concat "^commit - \\([a-z0-9]+\\)\n"
+          "blob - \\([a-z0-9]+\\)\n"
+          "file \\+ .+\n"
+          "--- \\(.+\\)\n"
+          "\\+\\+\\+ \\(.+\\)\n")
+  "Regexp to match commit headers.")
+
 (defun vc-got-checkin-patch (patch-string comment)
   "Commit PATCH-STRING with COMMENT to repository."
   (let ((temp-patch-file (make-temp-file "got-patch")))
@@ -660,14 +668,13 @@ populates it with files from a directory polled from user."
             (insert patch-string)
             ;; heuristic to figure out what files are affected by the patch
             (goto-char (point-min))
-            (while (re-search-forward "^file \+" nil t)
-              (forward-char 2)
-              (push (buffer-substring-no-properties (point) (line-end-position))
-                    files)))
+            (while (re-search-forward vc-got--commit-header-re nil t)
+              (push (match-string-no-properties 3) files)))
           ;; apply the patch to work tree
           (vc-got-command nil 0 temp-patch-file "patch")
-          ;; commit the changed files
-          (vc-got-checkin files comment))
+          ;; commit the changed files, reverse to keep same order as in
+          ;; patch file
+          (vc-got-checkin (reverse files) comment))
       ;; delete the temp patch, no longer needed
       (delete-file temp-patch-file))))
 
