@@ -99,9 +99,7 @@
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
 ;; - mergebase                          DONE using the 'git merge-base'
-;; - last-change                        NOT IMPLEMENTED
-;; - revision-published-p               NOT IMPLEMENTED
-;; - mergebase
+;; - last-change                        DONE
 ;;
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
@@ -1075,6 +1073,19 @@ Value is returned as floating point fractional number of days."
         (if (string-empty-p yca)
             (error "No common ancestor for merge base")
           yca))))))
+
+(defun vc-got-last-change (file line)
+  "Return the most recent revision of FILE that made a change on LINE."
+  (with-temp-buffer
+    (let (process-file-side-effects)
+      (vc-got-command t 0 file "blame")
+      (goto-char (point-min))
+      (forward-line (1- line))
+      (cadr (split-string
+             (buffer-substring-no-properties
+              (line-beginning-position)
+              (line-end-position)))))))
+
 
 ;; Tag system
 
