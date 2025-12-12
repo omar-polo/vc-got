@@ -7,7 +7,7 @@
 ;; URL: https://projects.omarpolo.com/vc-got.html
 ;; Keywords: vc tools
 ;; Version: 1.2
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -240,7 +240,7 @@ The difference to `vc-do-command' is that this function always invokes
 (defmacro vc-got-with-worktree (file &rest body)
   "Evaluate BODY in the work tree directory of FILE."
   (declare (debug t) (indent defun))
-  `(when-let (default-directory (vc-got-root ,file))
+  `(when-let* ((default-directory (vc-got-root ,file)))
      ,@body))
 
 (defun vc-got--repo-root ()
@@ -791,12 +791,12 @@ It's like `vc-process-filter' but supports \\r inside S."
 (defun vc-got--push-pull (cmd op prompt)
   "Execute CMD OP, or prompt the user if PROMPT is non-nil."
   (let ((buffer (format "*vc-got : %s*" (expand-file-name default-directory))))
-    (when-let (cmd (if prompt
-                       (split-string
-                        (read-shell-command (format "%s %s command: " cmd op)
-                                            (format "%s %s " cmd op))
-                        " " t)
-                     (list cmd op)))
+    (when-let* ((cmd (if prompt
+                         (split-string
+                          (read-shell-command (format "%s %s command: " cmd op)
+                                              (format "%s %s " cmd op))
+                          " " t)
+                       (list cmd op))))
       (apply #'vc-do-async-command buffer default-directory cmd)
       (with-current-buffer buffer
         (vc-compilation-mode 'got)
