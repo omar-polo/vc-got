@@ -94,14 +94,14 @@
 ;; - revision-completion-table          DONE
 ;; - annotate-command                   DONE
 ;; - annotate-time                      DONE
-;; - annotate-current-time              NOT NEEDED
-;;      the default time handling is enough.
+;; - annotate-current-time              NOT NEEDED, defaults are fine.
 ;; - annotate-extract-revision-at-line  DONE
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
-;; - mergebase                          NOT IMPLEMENTED
+;; - mergebase                          DONE using the 'git merge-base'
 ;; - last-change                        NOT IMPLEMENTED
 ;; - revision-published-p               NOT IMPLEMENTED
+;; - mergebase
 ;;
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
@@ -1059,6 +1059,22 @@ Value is returned as floating point fractional number of days."
     (when (looking-at vc-got--annotate-re)
       (match-string-no-properties 1))))
 
+(defun vc-got-mergebase (rev1 &optional rev2)
+  "Returns the youngest common ancestor of commits REV1 and optional REV2."
+  ;; NOTE: 2025-10-10: `got' does not externally provide the youngest
+  ;; common ancestor info so use git merge-base to look for it.
+  ;; `got' sources have implementation, look for:
+  ;; got_commit_graph_find_youngest_common_ancestor
+  (with-temp-buffer
+    (let* ((rev2 (or rev2 "HEAD"))
+           (default-directory (vc-got--repo-root))
+           (code (call-process "git" nil t nil "merge-base" rev1 rev2)))
+      ;; TODO:: this hides the error on why command fails
+    (when (zerop code)
+      (let ((yca (string-trim-right (buffer-string))))
+        (if (string-empty-p yca)
+            (error "No common ancestor for merge base")
+          yca))))))
 
 ;; Tag system
 
