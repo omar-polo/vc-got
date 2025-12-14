@@ -83,8 +83,8 @@
 ;; - incoming-revision                  DONE
 ;; - log-search                         DONE
 ;; - log-view-mode                      DONE
-;; - comment-history                    NOT IMPLEMENTED
 ;; - show-log-entry                     DONE
+;; - comment-history                    DONE
 ;; - update-changelog                   NOT IMPLEMENTED
 ;; * diff                               DONE
 ;; - revision-completion-table          DONE
@@ -308,6 +308,12 @@ worktree."
                    "^commit")))
         (re-search-forward
          (concat fmt "\\s" revision) nil t)))))
+
+(defun vc-got-comment-history (file)
+  "Show all log entries for given FILE."
+  (let (process-file-side-effects)
+    (vc-got-command "*vc-log*" 'async file "log")))
+
 
 (defalias 'vc-got-async-checkins #'ignore)
 
