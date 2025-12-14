@@ -37,6 +37,7 @@
 ;; * revision-granularity               DONE
 ;; - update-on-retrieve-tag             DONE
 ;; - async-checkins                     DONE
+;; - working-revision-symbol            NOT IMPLEMENTED
 ;;
 ;; STATE-QUERYING FUNCTIONS:
 ;; * registered                         DONE
@@ -75,6 +76,9 @@
 ;; - add-working-tree                   DONE
 ;; - delete-working-tree                DONE
 ;; - move-working-tree                  DONE
+;; - delete-revision                    NOT IMPLEMENTED
+;; - delete-revisions-from-end          NOT IMPLEMENTED
+;; - uncommit-revisions-from-end        NOT IMPLEMENTED
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
@@ -96,6 +100,8 @@
 ;; - region-history                     NOT IMPLEMENTED
 ;; - region-history-mode                NOT IMPLEMENTED
 ;; - mergebase                          NOT IMPLEMENTED
+;; - last-change                        NOT IMPLEMENTED
+;; - revision-published-p               NOT IMPLEMENTED
 ;;
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
