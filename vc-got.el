@@ -57,7 +57,7 @@
 ;; - receive-file                       NOT NEEDED, default `register' is fine
 ;; - unregister                         DONE
 ;; * checkin                            DONE
-;; * checkin-patch                      DONE
+;; - checkin-patch                      DONE
 ;; * find-revision                      DONE
 ;; * checkout                           DONE
 ;; * revert                             DONE
@@ -78,9 +78,9 @@
 ;;
 ;; HISTORY FUNCTIONS
 ;; * print-log                          DONE
-;; * log-outgoing                       DONE (Deprecated)
-;; * log-incoming                       DONE (Deprecated)
-;; - incoming-revision                  DONE
+;; - log-outgoing                       DONE (Deprecated)
+;; - log-incoming                       DONE (Deprecated)
+;; * incoming-revision                  DONE
 ;; - log-search                         DONE
 ;; - log-view-mode                      DONE
 ;; - show-log-entry                     DONE
