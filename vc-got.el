@@ -101,7 +101,7 @@
 ;; - create-tag                         DONE
 ;; - retrieve-tag                       DONE
 ;;
-;; MISCELLANEOUS                        NOT IMPLEMENTED
+;; MISCELLANEOUS
 ;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
 ;; - root                               DONE
 ;; - ignore                             NOT NEEDED, the default action is good
