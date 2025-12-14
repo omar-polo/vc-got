@@ -83,8 +83,8 @@
 ;; - incoming-revision                  DONE
 ;; - log-search                         DONE
 ;; - log-view-mode                      DONE
-;; - show-log-entry                     NOT IMPLEMENTED
 ;; - comment-history                    NOT IMPLEMENTED
+;; - show-log-entry                     DONE
 ;; - update-changelog                   NOT IMPLEMENTED
 ;; * diff                               DONE
 ;; - revision-completion-table          DONE
@@ -296,7 +296,18 @@ worktree."
         (goto-char (point-min))
         (delete-matching-lines
          "^-----------------------------------------------$")
-          t))))
+        t))))
+
+(defun vc-got-show-log-entry (revision)
+  "Search for REVISION in current buffer and move to it."
+  (let (process-file-side-effects)
+    (goto-char (point-min))
+    (when revision
+      (let ((fmt (if (not (memq vc-log-view-type '(long log-search with-diff)))
+                     "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}"
+                   "^commit")))
+        (re-search-forward
+         (concat fmt "\\s" revision) nil t)))))
 
 (defalias 'vc-got-async-checkins #'ignore)
 
