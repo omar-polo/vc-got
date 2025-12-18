@@ -200,6 +200,12 @@ running `vc-create-repo'."
 		 (string :tag "Argument String")
 		 (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-log-keep-separators nil
+  "Non-nil to allow keeping the log entry separators in buffers.
+Enabling this means the '---' lines are displayed in the log buffers."
+  :type '(choice (const :tag "No" nil)
+                 (const :tag "Yes" t)))
+
 (defcustom vc-got-diff-show-commit-message nil
   "Non-nil to allow showing commit messages when showing diffs.
 Enabling this means the `vc-got-diff' will show commit message
@@ -313,8 +319,9 @@ worktree."
                              (and shortlog '("-s"))
                              (and file-changes '("-P")))))
         (goto-char (point-min))
-        (delete-matching-lines
-         "^-----------------------------------------------$")
+        (unless vc-got-log-keep-separators
+          (delete-matching-lines
+           "^-----------------------------------------------$"))
         t))))
 
 (defun vc-got-show-log-entry (revision)
