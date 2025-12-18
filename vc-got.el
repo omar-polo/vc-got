@@ -274,11 +274,12 @@ Assume `default-directory' is inside a got worktree."
   "Call `vc-got-program' with ARGS.
 The output will be placed in the current buffer."
   (apply #'process-file vc-got-program nil (current-buffer) nil
-         (apply #'nconc (mapcar (lambda (s) (if (listp s) s (list s))) args))))
+         (apply #'nconc (mapcar (lambda (s) (ensure-list s)) args))))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
-  (apply #'vc-got-command nil 0 files "add" vc-register-switches))
+  (apply #'vc-got-command nil 0 files "add"
+         (ensure-list vc-register-switches)))
 
 (defun vc-got--info (path)
   "Execute got info in the worktree of PATH in the current buffer."
