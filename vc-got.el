@@ -295,7 +295,7 @@ The output will be placed in the current buffer."
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff
-                              async)
+                              async shortlog file-changes)
   "Execute the log command in the worktree of PATH in the current buffer.
 LIMIT limits the maximum number of commit returned.
 
@@ -305,6 +305,8 @@ SEARCH-PATTERN: limit to log messages matched by the regexp given.
 REVERSE: display the log messages in reverse order.
 INCLUDE-DIFF: display the patch of modifications made in each commit.
 ASYNC: when non-nil, run the log asynchronously.
+SHORTLOG: when non-nil, return the log in short format.
+FILE-CHANGES: when non-nil, return the file changes.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
@@ -326,7 +328,9 @@ worktree."
                              (and search-pattern (list search-flag
                                                        search-pattern))
                              (and reverse '("-R"))
-                             (and include-diff '("-p")))))
+                             (and include-diff '("-p"))
+                             (and shortlog '("-s"))
+                             (and file-changes '("-P")))))
         (goto-char (point-min))
         (delete-matching-lines
          "^-----------------------------------------------$")
