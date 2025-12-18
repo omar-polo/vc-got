@@ -1063,7 +1063,8 @@ revisions''; instead, like with git, you have tags and branches."
       ;; investigate why this is needed.
       (setq-local vc-parent-buffer (find-file-noselect file))
       (apply #'vc-got-command buf 0 file "blame"
-             (when rev (list "-c" rev))))))
+             (when (and rev (not (string= rev "0")))
+               (list "-c" rev))))))
 
 (defconst vc-got--annotate-re
   (concat "^[0-9]\\{1,\\}) " ; line number followed by )
