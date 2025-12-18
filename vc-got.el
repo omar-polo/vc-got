@@ -435,6 +435,12 @@ ROOT is the root of the repo."
           (push (list (match-string 1) (match-string 2) (match-string 3))
                 revisions))
         revisions))))
+
+(defun vc-got--prompt-branch (message)
+  "Prompt user for a branch.  The prompt displays MESSAGE for the user."
+  ;; TODO: sort branches
+  (completing-read message (mapcar #'car (vc-got--list-branches))))
+
 (defun vc-got--current-branch ()
   "Return the current branch."
   (let (process-file-side-effects)
