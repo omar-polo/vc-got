@@ -519,11 +519,12 @@ files on disk."
           (push (match-string 2) table))
         table))))
 
-(defun vc-got--branch (name)
-  "Try to create and switch to the branch called NAME."
+(defun vc-got--branch (name &optional commit)
+  "Try to create and switch to the branch called NAME.
+If optional COMMIT is given, start the new branch from it."
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
-      (vc-got-command nil 0 nil "branch" name))))
+      (vc-got-command nil 0 nil "branch" "-c" (or commit ":head") name))))
 
 
 ;; Backend properties
