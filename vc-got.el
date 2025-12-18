@@ -454,6 +454,25 @@ the specified PATHS."
         (set-process-filter proc #'vc-got--proc-filter))
       (vc-set-async-update (current-buffer)))))
 
+(defun vc-got--diff-hunk-filter (files)
+  "Filters the diff hunks in a buffer to those matching FILES."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward vc-got--commit-header-re nil t)
+      (let ((hunk-file (match-string-no-properties 3)))
+        (unless (member hunk-file files)
+          (goto-char (match-beginning 0)) ;; point to start of hunk
+          (delete-region
+           (point)
+           ;; first search to the end of current hunk headers, next
+           ;; search goes to next hunk. So we either delete from start
+           ;; of current hunk to the start of next hunk (if found) or to
+           ;; the end of file.
+           (if (and (re-search-forward vc-got--commit-header-re nil t)
+                    (re-search-forward vc-got--commit-header-re nil t))
+               (goto-char (match-beginning 0))
+             (goto-char (point-max)))))))))
+
 (defun vc-got--diff-files (files &optional async)
   "Compute the local modifications to FILES.
 If ASYNC is non-nil, run the diff asynchronously."
@@ -1015,7 +1034,11 @@ Heavily inspired by `vc-git-log-view-mode'."
               ;;
               ;; TODO 2: if rev2 is nil as well, diff against an empty
               ;; tree (i.e. get the patch from `got log -p rev1')
-              (t (vc-got--diff-objects rev1 rev2 async)))))))
+              (t (vc-got--diff-objects rev1 rev2 async)))
+        ;; if diffing files, filter the full diff output to just hunks
+        ;; matching the FILES.
+        (when (and files (null rev1) (null rev2))
+          (vc-got--diff-hunk-filter files))))))
 
 (defun vc-got-revision-completion-table (_files)
   "Return a completion table for existing revisions.
