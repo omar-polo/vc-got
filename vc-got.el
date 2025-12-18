@@ -275,7 +275,8 @@ The output will be placed in the current buffer."
       (vc-got-command t nil path "info"))))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
-                              search-pattern reverse include-diff)
+                              search-pattern reverse include-diff
+                              async)
   "Execute the log command in the worktree of PATH in the current buffer.
 LIMIT limits the maximum number of commit returned.
 
@@ -284,6 +285,7 @@ STOP-COMMIT: stop traversing history at the specified commit.
 SEARCH-PATTERN: limit to log messages matched by the regexp given.
 REVERSE: display the log messages in reverse order.
 INCLUDE-DIFF: display the patch of modifications made in each commit.
+ASYNC: when non-nil, run the log asynchronously.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
@@ -296,7 +298,7 @@ worktree."
                         "-S")))
     (vc-got-with-worktree (or path default-directory)
       (save-excursion
-        (apply #'vc-got-command t 0 path "log"
+        (apply #'vc-got-command t async path "log"
                (mapcan (lambda (x)
                          (if (listp x) x nil))
                        (list (and limit (list "-l" (format "%s" limit)))
@@ -326,7 +328,6 @@ worktree."
   "Show all log entries for given FILE."
   (let (process-file-side-effects)
     (vc-got-command "*vc-log*" 'async file "log")))
-
 
 (defalias 'vc-got-async-checkins #'ignore)
 
@@ -442,17 +443,19 @@ the specified PATHS."
         (set-process-filter proc #'vc-got--proc-filter))
       (vc-set-async-update (current-buffer)))))
 
-(defun vc-got--diff-files (files)
-  "Compute the local modifications to FILES."
+(defun vc-got--diff-files (files &optional async)
+  "Compute the local modifications to FILES.
+If ASYNC is non-nil, run the diff asynchronously."
   (let (process-file-side-effects)
-    (apply #'vc-got-command t 0 files "diff" "-P" (vc-switches 'got 'diff))))
+    (apply #'vc-got-command t async files "diff" "-P" (vc-switches 'got 'diff))))
 
-(defun vc-got--diff-objects (obj1 obj2)
+(defun vc-got--diff-objects (obj1 obj2 &optional async)
   "Diff the two objects OBJ1 and OBJ2.
 OBJ1 and OBJ2 are interpreted as a reference, tag name, or an
-object ID SHA1 hash."
+object ID SHA1 hash.
+If ASYNC is non-nil, run the diff asynchronously."
   (let (process-file-side-effects)
-    (apply #'vc-got-command t 0 nil "diff"
+    (apply #'vc-got-command t async nil "diff"
            (append (vc-switches 'got 'diff)
                    (list "--" obj1 obj2)))))
 
@@ -979,9 +982,8 @@ Heavily inspired by `vc-git-log-view-mode'."
                   (2 'change-log-email))
                  ("^date: \\(.+\\)" (1 'change-log-date))))))
 
-;; TODO: async
 ;; TODO: return 0 or 1
-(defun vc-got-diff (files &optional rev1 rev2 buffer _async)
+(defun vc-got-diff (files &optional rev1 rev2 buffer async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
   (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
@@ -990,19 +992,19 @@ Heavily inspired by `vc-git-log-view-mode'."
                                 default-directory)
         (cond ((and (null rev1)
                     (null rev2))
-               (vc-got--diff-files files))
+               (vc-got--diff-files files async))
               ((and (null rev1)
                     rev2)
                (if vc-got-diff-show-commit-message
-                   (vc-got--log nil 1 rev2 nil nil nil t)
-                 (vc-got--diff-objects rev1 rev2)))
+                   (vc-got--log nil 1 rev2 nil nil nil t async)
+                 (vc-got--diff-objects rev1 rev2 async)))
               ;;
               ;; TODO: if rev1 is nil, diff from the current version until
               ;; rev2.
               ;;
               ;; TODO 2: if rev2 is nil as well, diff against an empty
               ;; tree (i.e. get the patch from `got log -p rev1')
-              (t (vc-got--diff-objects rev1 rev2)))))))
+              (t (vc-got--diff-objects rev1 rev2 async)))))))
 
 (defun vc-got-revision-completion-table (_files)
   "Return a completion table for existing revisions.
