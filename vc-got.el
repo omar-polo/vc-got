@@ -205,6 +205,13 @@ running `vc-create-repo'."
   :type '(choice (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-clone-switches (list "-a")
+  "A string or list of strings specifying extra switches passed on for
+`vc-got-clone'."
+  :type '(choice (const :tag "None" nil)
+		 (string :tag "Argument String")
+		 (repeat :tag "Argument List" :value ("") string)))
+
 (defcustom vc-got-incoming-revision-switches nil
   "A string or list of strings specifying extra switches passed on for
 `vc-got-incoming-revision'."
