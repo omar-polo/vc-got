@@ -181,6 +181,18 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
                  (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-pull-switches nil
+  "String or list of strings specifying switches for `got fetch' when
+running `vc-pull'."
+  :type '(choice (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-push-switches nil
+  "String or list of strings specifying switches for `got send' when
+running `vc-push'."
+  :type '(choice (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
 (defcustom vc-got-create-repo-init-switches nil
   "String or list of strings specifying switches for `got init' when
 running `vc-create-repo'."
@@ -818,11 +830,15 @@ It's like `vc-process-filter' but supports \\r inside S."
 ;; TODO: can this handle prefix argument? pull does fetch, C-u pull does update?
 (defun vc-got-pull (prompt)
   "Execute a fetch prompting for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-program "fetch" prompt))
+  (vc-got--push-pull vc-got-program
+                     (cons "fetch" (ensure-list vc-got-pull-switches))
+                     prompt))
 
 (defun vc-got-push (prompt)
   "Execute a send prompting for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-program "send" prompt))
+  (vc-got--push-pull vc-got-program
+                     (cons "send" (ensure-list vc-got-push-switches))
+                     prompt))
 
 (defun vc-got-get-change-comment (_files rev)
   "Return the change comments given REV.  The files argument is ignored."
