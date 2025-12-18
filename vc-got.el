@@ -200,6 +200,13 @@ running `vc-create-repo'."
 		 (string :tag "Argument String")
 		 (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-diff-show-commit-message nil
+  "Non-nil to allow showing commit messages when showing diffs.
+Enabling this means the `vc-got-diff' will show commit message
+assossiated with revisions along side the diff."
+  :type '(choice (const :tag "No" nil)
+                 (const :tag "Yes" t)))
+
 ;; helpers
 (defmacro vc-got--with-emacs-version<= (version &rest body)
   "Eval BODY only when the Emacs version in greater or equal VERSION."
@@ -986,14 +993,9 @@ Heavily inspired by `vc-git-log-view-mode'."
                (vc-got--diff-files files))
               ((and (null rev1)
                     rev2)
-               ;; TODO: this includes the whole diff while to respect
-               ;; the vc semantics we should filter only the diff for
-               ;; files in FILES.
-               ;;
-               ;; XXX: this includes also the commit message, I
-               ;; consider it a feature over the usual vc behaviour of
-               ;; showing only the diff.
-               (vc-got--log nil 1 rev2 nil nil nil t))
+               (if vc-got-diff-show-commit-message
+                   (vc-got--log nil 1 rev2 nil nil nil t)
+                 (vc-got--diff-objects rev1 rev2)))
               ;;
               ;; TODO: if rev1 is nil, diff from the current version until
               ;; rev2.
