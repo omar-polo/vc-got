@@ -422,6 +422,19 @@ ROOT is the root of the repo."
           (push (cons (match-string 1) (match-string 2)) alist))
         alist))))
 
+(defun vc-got--list-revisions ()
+  "Return an alist of (branch . commit)."
+  (let (process-file-side-effects)
+    (with-temp-buffer
+      ;; TODO: make number of revisions to query a custom variable
+      (vc-got--log nil 50 nil nil nil nil nil nil t)
+      (let (revisions)
+        (goto-char (point-min))
+        (while (re-search-forward "\\(^[0-9-]\\{10\\}\\) \\([a-z0-9]+\\) \\(.*\\)$"
+                                  nil t)
+          (push (list (match-string 1) (match-string 2) (match-string 3))
+                revisions))
+        revisions))))
 (defun vc-got--current-branch ()
   "Return the current branch."
   (let (process-file-side-effects)
