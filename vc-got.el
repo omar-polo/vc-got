@@ -180,6 +180,18 @@ If nil, use the value of `vc-diff-switches'.  If t, use no switches."
                  (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-pull-switches nil
+  "String or list of strings specifying switches for `got fetch' when
+running `vc-pull'."
+  :type '(choice (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-push-switches nil
+  "String or list of strings specifying switches for `got send' when
+running `vc-push'."
+  :type '(choice (string :tag "Argument String")
+                 (repeat :tag "Argument List" :value ("") string)))
+
 (defcustom vc-got-create-repo-init-switches nil
   "String or list of strings specifying switches for `got init' when
 running `vc-create-repo'."
@@ -191,6 +203,13 @@ running `vc-create-repo'."
 running `vc-create-repo'."
   :type '(choice (string :tag "Argument String")
                  (repeat :tag "Argument List" :value ("") string)))
+
+(defcustom vc-got-clone-switches (list "-a")
+  "A string or list of strings specifying extra switches passed on for
+`vc-got-clone'."
+  :type '(choice (const :tag "None" nil)
+		 (string :tag "Argument String")
+		 (repeat :tag "Argument List" :value ("") string)))
 
 (defcustom vc-got-incoming-revision-switches nil
   "A string or list of strings specifying extra switches passed on for
@@ -254,11 +273,12 @@ Assume `default-directory' is inside a got worktree."
   "Call `vc-got-program' with ARGS.
 The output will be placed in the current buffer."
   (apply #'process-file vc-got-program nil (current-buffer) nil
-         (apply #'nconc (mapcar (lambda (s) (if (listp s) s (list s))) args))))
+         (apply #'nconc (mapcar (lambda (s) (ensure-list s)) args))))
 
 (defun vc-got--add (files)
   "Add FILES to got, passing `vc-register-switches' to the command invocation."
-  (apply #'vc-got-command nil 0 files "add" vc-register-switches))
+  (apply #'vc-got-command nil 0 files "add"
+         (ensure-list vc-register-switches)))
 
 (defun vc-got--info (path)
   "Execute got info in the worktree of PATH in the current buffer."
@@ -401,6 +421,25 @@ ROOT is the root of the repo."
           (push (cons (match-string 1) (match-string 2)) alist))
         alist))))
 
+(defun vc-got--list-revisions ()
+  "Return an alist of (branch . commit)."
+  (let (process-file-side-effects)
+    (with-temp-buffer
+      ;; TODO: make number of revisions to query a custom variable
+      (vc-got--log nil 50 nil nil nil nil nil nil t)
+      (let (revisions)
+        (goto-char (point-min))
+        (while (re-search-forward "\\(^[0-9-]\\{10\\}\\) \\([a-z0-9]+\\) \\(.*\\)$"
+                                  nil t)
+          (push (list (match-string 1) (match-string 2) (match-string 3))
+                revisions))
+        revisions))))
+
+(defun vc-got--prompt-branch (message)
+  "Prompt user for a branch.  The prompt displays MESSAGE for the user."
+  ;; TODO: sort branches
+  (completing-read message (mapcar #'car (vc-got--list-branches))))
+
 (defun vc-got--current-branch ()
   "Return the current branch."
   (let (process-file-side-effects)
@@ -479,11 +518,12 @@ files on disk."
           (push (match-string 2) table))
         table))))
 
-(defun vc-got--branch (name)
-  "Try to create and switch to the branch called NAME."
+(defun vc-got--branch (name &optional commit)
+  "Try to create and switch to the branch called NAME.
+If optional COMMIT is given, start the new branch from it."
   (let (process-file-side-effects)
     (vc-got-with-worktree default-directory
-      (vc-got-command nil 0 nil "branch" name))))
+      (vc-got-command nil 0 nil "branch" "-c" (or commit ":head") name))))
 
 
 ;; Backend properties
@@ -817,11 +857,15 @@ It's like `vc-process-filter' but supports \\r inside S."
 ;; TODO: can this handle prefix argument? pull does fetch, C-u pull does update?
 (defun vc-got-pull (prompt)
   "Execute a fetch prompting for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-program "fetch" prompt))
+  (vc-got--push-pull vc-got-program
+                     (cons "fetch" (ensure-list vc-got-pull-switches))
+                     prompt))
 
 (defun vc-got-push (prompt)
   "Execute a send prompting for the full command if PROMPT is not nil."
-  (vc-got--push-pull vc-got-program "send" prompt))
+  (vc-got--push-pull vc-got-program
+                     (cons "send" (ensure-list vc-got-push-switches))
+                     prompt))
 
 (defun vc-got-get-change-comment (_files rev)
   "Return the change comments given REV.  The files argument is ignored."
@@ -1018,7 +1062,8 @@ revisions''; instead, like with git, you have tags and branches."
       ;; investigate why this is needed.
       (setq-local vc-parent-buffer (find-file-noselect file))
       (apply #'vc-got-command buf 0 file "blame"
-             (when rev (list "-c" rev))))))
+             (when (and rev (not (string= rev "0")))
+               (list "-c" rev))))))
 
 (defconst vc-got--annotate-re
   (concat "^[0-9]\\{1,\\}) " ; line number followed by )
