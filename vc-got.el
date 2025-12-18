@@ -433,7 +433,7 @@ the specified PATHS."
                                                 nil))
         ;; Setup a custom process filter that handles \r.
         (set-process-filter proc #'vc-got--proc-filter))
-       (vc-set-async-update (current-buffer)))))
+      (vc-set-async-update (current-buffer)))))
 
 (defun vc-got--diff-files (files)
   "Compute the local modifications to FILES."
@@ -669,10 +669,10 @@ populates it with files from a directory polled from user."
 (defun vc-got-checkin (files comment &optional _rev)
   "Commit FILES with COMMENT as commit message."
   (apply #'vc-got-command nil 0 files
-                  "commit" "-m"
-                  (log-edit-extract-headers
-                   '(("Author" . "-A"))
-                   comment)))
+         "commit" "-m"
+         (log-edit-extract-headers
+          '(("Author" . "-A"))
+          comment)))
 
 (defconst vc-got--commit-header-re
   (concat "^commit - \\([a-z0-9]+\\)\n"
@@ -941,9 +941,9 @@ possible is required."
       (let ((start-commit (if (string-empty-p upstream-location)
                               (concat "origin/" (vc-got--current-branch))
                             upstream-location)))
-      (vc-got--log nil 1 start-commit)
-      (when-let* ((commit-line (re-search-forward vc-got--commit-re nil t)))
-        (match-string-no-properties 1))))))
+        (vc-got--log nil 1 start-commit)
+        (when-let* ((commit-line (re-search-forward vc-got--commit-re nil t)))
+          (match-string-no-properties 1))))))
 
 (defun vc-got-log-search (buffer pattern)
   "Search commits for PATTERN and write the results found in BUFFER."
