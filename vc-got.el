@@ -100,6 +100,7 @@
 ;; - region-history-mode                NOT IMPLEMENTED
 ;; - mergebase                          DONE using the 'git merge-base'
 ;; - last-change                        DONE
+;; - revision-published-p               NOT IMPLEMENTED
 ;;
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
