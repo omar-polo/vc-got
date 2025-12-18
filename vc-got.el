@@ -1068,11 +1068,11 @@ Value is returned as floating point fractional number of days."
            (default-directory (vc-got--repo-root))
            (code (call-process "git" nil t nil "merge-base" rev1 rev2)))
       ;; TODO:: this hides the error on why command fails
-    (when (zerop code)
-      (let ((yca (string-trim-right (buffer-string))))
-        (if (string-empty-p yca)
-            (error "No common ancestor for merge base")
-          yca))))))
+      (when (zerop code)
+        (let ((yca (string-trim-right (buffer-string))))
+          (if (string-empty-p yca)
+              (error "No common ancestor for merge base")
+            yca))))))
 
 (defun vc-got-last-change (file line)
   "Return the most recent revision of FILE that made a change on LINE."
