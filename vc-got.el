@@ -306,7 +306,7 @@ worktree."
                         "-S")))
     (vc-got-with-worktree (or path default-directory)
       (save-excursion
-        (apply #'vc-got-command t async path "log"
+        (apply #'vc-got-command t (if async 'async 0) path "log"
                (mapcan (lambda (x)
                          (if (listp x) x nil))
                        (list (and limit (list "-l" (format "%s" limit)))
