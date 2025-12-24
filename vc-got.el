@@ -199,6 +199,19 @@ running `vc-create-repo'."
 		 (string :tag "Argument String")
 		 (repeat :tag "Argument List" :value ("") string)))
 
+(defcustom vc-got-log-keep-separators nil
+  "Non-nil to allow keeping the log entry separators in buffers.
+Enabling this means the '---' lines are displayed in the log buffers."
+  :type '(choice (const :tag "No" nil)
+                 (const :tag "Yes" t)))
+
+(defcustom vc-got-diff-show-commit-message nil
+  "Non-nil to allow showing commit messages when showing diffs.
+Enabling this means the `vc-got-diff' will show commit message
+assossiated with revisions along side the diff."
+  :type '(choice (const :tag "No" nil)
+                 (const :tag "Yes" t)))
+
 ;; helpers
 (defmacro vc-got--with-emacs-version<= (version &rest body)
   "Eval BODY only when the Emacs version in greater or equal VERSION."
@@ -267,7 +280,8 @@ The output will be placed in the current buffer."
       (vc-got-command t nil path "info"))))
 
 (defun vc-got--log (&optional path limit start-commit stop-commit
-                              search-pattern reverse include-diff)
+                              search-pattern reverse include-diff
+                              async shortlog file-changes)
   "Execute the log command in the worktree of PATH in the current buffer.
 LIMIT limits the maximum number of commit returned.
 
@@ -276,6 +290,9 @@ STOP-COMMIT: stop traversing history at the specified commit.
 SEARCH-PATTERN: limit to log messages matched by the regexp given.
 REVERSE: display the log messages in reverse order.
 INCLUDE-DIFF: display the patch of modifications made in each commit.
+ASYNC: when non-nil, run the log asynchronously.
+SHORTLOG: when non-nil, return the log in short format.
+FILE-CHANGES: when non-nil, return the file changes.
 
 Return nil if the command failed or if PATH isn't included in any
 worktree."
@@ -288,7 +305,7 @@ worktree."
                         "-S")))
     (vc-got-with-worktree (or path default-directory)
       (save-excursion
-        (apply #'vc-got-command t 0 path "log"
+        (apply #'vc-got-command t (if async 'async 0) path "log"
                (mapcan (lambda (x)
                          (if (listp x) x nil))
                        (list (and limit (list "-l" (format "%s" limit)))
@@ -297,10 +314,13 @@ worktree."
                              (and search-pattern (list search-flag
                                                        search-pattern))
                              (and reverse '("-R"))
-                             (and include-diff '("-p")))))
+                             (and include-diff '("-p"))
+                             (and shortlog '("-s"))
+                             (and file-changes '("-P")))))
         (goto-char (point-min))
-        (delete-matching-lines
-         "^-----------------------------------------------$")
+        (unless vc-got-log-keep-separators
+          (delete-matching-lines
+           "^-----------------------------------------------$"))
         t))))
 
 (defun vc-got-show-log-entry (revision)
@@ -318,7 +338,6 @@ worktree."
   "Show all log entries for given FILE."
   (let (process-file-side-effects)
     (vc-got-command "*vc-log*" 'async file "log")))
-
 
 (defalias 'vc-got-async-checkins #'ignore)
 
@@ -434,17 +453,38 @@ the specified PATHS."
         (set-process-filter proc #'vc-got--proc-filter))
       (vc-set-async-update (current-buffer)))))
 
-(defun vc-got--diff-files (files)
-  "Compute the local modifications to FILES."
-  (let (process-file-side-effects)
-    (apply #'vc-got-command t 0 files "diff" "-P" (vc-switches 'got 'diff))))
+(defun vc-got--diff-hunk-filter (files)
+  "Filters the diff hunks in a buffer to those matching FILES."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward vc-got--commit-header-re nil t)
+      (let ((hunk-file (match-string-no-properties 3)))
+        (unless (member hunk-file files)
+          (goto-char (match-beginning 0)) ;; point to start of hunk
+          (delete-region
+           (point)
+           ;; first search to the end of current hunk headers, next
+           ;; search goes to next hunk. So we either delete from start
+           ;; of current hunk to the start of next hunk (if found) or to
+           ;; the end of file.
+           (if (and (re-search-forward vc-got--commit-header-re nil t)
+                    (re-search-forward vc-got--commit-header-re nil t))
+               (goto-char (match-beginning 0))
+             (goto-char (point-max)))))))))
 
-(defun vc-got--diff-objects (obj1 obj2)
+(defun vc-got--diff-files (files &optional async)
+  "Compute the local modifications to FILES.
+If ASYNC is non-nil, run the diff asynchronously."
+  (let (process-file-side-effects)
+    (apply #'vc-got-command t async files "diff" "-P" (vc-switches 'got 'diff))))
+
+(defun vc-got--diff-objects (obj1 obj2 &optional async)
   "Diff the two objects OBJ1 and OBJ2.
 OBJ1 and OBJ2 are interpreted as a reference, tag name, or an
-object ID SHA1 hash."
+object ID SHA1 hash.
+If ASYNC is non-nil, run the diff asynchronously."
   (let (process-file-side-effects)
-    (apply #'vc-got-command t 0 nil "diff"
+    (apply #'vc-got-command t async nil "diff"
            (append (vc-switches 'got 'diff)
                    (list "--" obj1 obj2)))))
 
@@ -971,9 +1011,8 @@ Heavily inspired by `vc-git-log-view-mode'."
                   (2 'change-log-email))
                  ("^date: \\(.+\\)" (1 'change-log-date))))))
 
-;; TODO: async
 ;; TODO: return 0 or 1
-(defun vc-got-diff (files &optional rev1 rev2 buffer _async)
+(defun vc-got-diff (files &optional rev1 rev2 buffer async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
   (let* ((buffer (get-buffer-create (or buffer "*vc-diff*")))
          (inhibit-read-only t))
@@ -982,24 +1021,23 @@ Heavily inspired by `vc-git-log-view-mode'."
                                 default-directory)
         (cond ((and (null rev1)
                     (null rev2))
-               (vc-got--diff-files files))
+               (vc-got--diff-files files async))
               ((and (null rev1)
                     rev2)
-               ;; TODO: this includes the whole diff while to respect
-               ;; the vc semantics we should filter only the diff for
-               ;; files in FILES.
-               ;;
-               ;; XXX: this includes also the commit message, I
-               ;; consider it a feature over the usual vc behaviour of
-               ;; showing only the diff.
-               (vc-got--log nil 1 rev2 nil nil nil t))
+               (if vc-got-diff-show-commit-message
+                   (vc-got--log nil 1 rev2 nil nil nil t async)
+                 (vc-got--diff-objects rev1 rev2 async)))
               ;;
               ;; TODO: if rev1 is nil, diff from the current version until
               ;; rev2.
               ;;
               ;; TODO 2: if rev2 is nil as well, diff against an empty
               ;; tree (i.e. get the patch from `got log -p rev1')
-              (t (vc-got--diff-objects rev1 rev2)))))))
+              (t (vc-got--diff-objects rev1 rev2 async)))
+        ;; if diffing files, filter the full diff output to just hunks
+        ;; matching the FILES.
+        (when (and files (null rev1) (null rev2))
+          (vc-got--diff-hunk-filter files))))))
 
 (defun vc-got-revision-completion-table (_files)
   "Return a completion table for existing revisions.
