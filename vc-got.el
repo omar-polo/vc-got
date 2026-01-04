@@ -266,6 +266,31 @@ The output will be placed in the current buffer."
     (vc-got-with-worktree path
       (vc-got-command t nil path "info"))))
 
+(defun vc-got--cmds-in-progress ()
+  "Returns a list of commands which are in progress in the worktree."
+  (when-let* ((uuid (vc-got--work-tree-uuid default-directory)))
+    (with-temp-buffer
+      (vc-got-command t 0 nil "status")
+      (goto-char (point-min))
+      (let ((repo-dir (vc-got--repo-root))
+            (wt-base "refs/got/worktree")
+            cmds-in-progress)
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/backout-" uuid "-*")
+                                      repo-dir))
+          (push 'backout cmds-in-progress))
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/cherrypick-" uuid "-*")
+                                      repo-dir))
+          (push 'cherrypick cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is merging" nil t))
+          (push 'merge cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is rebasing" nil t))
+          (push 'rebase cmds-in-progress))
+        cmds-in-progress))))
+
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff)
   "Execute the log command in the worktree of PATH in the current buffer.
@@ -389,6 +414,68 @@ ROOT is the root of the repo."
   (vc-got-with-worktree (car files)
     (vc-got-command nil 0 files "revert")))
 
+(defun vc-got--backout (list clean &optional commit)
+  "Utility for running backouts.  If LIST is non-nil, show the ongoing
+backouts.  If the CLEAN is non-nil, clean prior backouts.  Optional COMMIT
+limits operations to given COMMIT."
+  (if (and list clean)
+      (user-error "Cannot list and clean backouts in same operation")
+    (with-temp-buffer
+      (apply #'vc-got-command t 0 commit "backout"
+             (list (and list "-l")
+                   (and clean "-X")))
+      (buffer-string))))
+
+(defun vc-got-backout ()
+  "Reverse-merges changes to work tree. If called in log-view-mode to log
+entry at point is used. Otherwise polls the user for the revision to
+backout."
+  (interactive)
+  (if (memq 'backout (vc-got--cmds-in-progress))
+      (when (y-or-n-p "Prior backout in progress, clean backouts?")
+        (vc-got--backout nil t))
+    (let ((revisions (log-view-get-marked)))
+      (if-let* ((rev (or (car revisions) (log-view-current-tag))))
+          (prog1
+              (vc-got--backout nil nil rev)
+            (message "Backed out commit %s" rev))
+        (when-let* ((rev-line (completing-read "Which revision: "
+                                               (mapcar (lambda (rows)
+                                                         (string-join rows " "))
+                                                       (vc-got--list-revisions)))))
+          (vc-got--backout nil nil (cadr (string-split rev-line " ")))
+          (message "Backed out commit %s" rev))))))
+
+(defun vc-got--rebase (action &optional branch)
+  "Utility for running rebase with different arguments.
+The ACTION determines the flags rebase in run with, some take BRANCH
+argument so that must also be given."
+  (let ((args (cond ((eq action 'start)
+                     (list branch))
+                    ((eq action 'abort)
+                     '("-a"))
+                    ((eq action 'continue)
+                     '("-c"))
+                    ((eq action 'force)
+                     '("-c" "-C"))
+                    ((eq action 'list)
+                     '("-l"))
+                    ((eq action 'clean)
+                     '("-X"))
+                    (t (error "Unknown action: %s" action)))))
+    (apply #'vc-got-command nil 0 nil "rebase" args)))
+
+(defun vc-got-rebase ()
+  "Execute `got rebase'."
+  (interactive)
+  ;; TODO: should this also run `got up -b <branch>'?
+  (if (memq 'rebase (vc-got--cmds-in-progress))
+      (when-let* ((action (completing-read "Rebase in progress, what to do? "
+                                           '(abort continue force list clean))))
+        (vc-got--rebase action))
+    (when-let* ((branch (vc-got--prompt-branch "Rebase with branch: ")))
+      (vc-got--rebase 'start branch))))
+
 (defun vc-got--list-branches ()
   "Return an alist of (branch . commit)."
   (let (process-file-side-effects)
@@ -407,10 +494,6 @@ ROOT is the root of the repo."
     (with-temp-buffer
       (when (zerop (vc-got--call "branch"))
         (string-trim (buffer-string) "" "\n")))))
-
-(defun vc-got--integrate (branch)
-  "Integrate BRANCH into the current one."
-  (vc-got-command nil 0 nil "integrate" branch))
 
 (defun vc-got--update (branch &optional paths)
   "Update to a different commit or BRANCH.
@@ -759,9 +842,9 @@ merge.  Some actions take BRANCH argument."
   "Prompt for a branch and integrate it into the current one."
   (interactive)
   ;; XXX: be smart and try to "got rebase" if "got integrate" fails?
+  ;; XXX: is integrate blocked by some operations?
   (when-let* ((branch (vc-got--prompt-branch "Integrate with branch: ")))
-    ;; we could add
-    ;; handle state changes: continue, force, abort
+    ;; XXX: should we handle state changes: continue, force, abort
     ;; `vc-got-integrate' as separate command.
     (vc-got-command nil 0 nil "integrate" branch)
     ;; TODO: add customization to delete branch after integration
@@ -970,6 +1053,9 @@ Heavily inspired by `vc-git-log-view-mode'."
                   (1 'change-log-name)
                   (2 'change-log-email))
                  ("^date: \\(.+\\)" (1 'change-log-date))))))
+
+(define-key vc-got-log-view-mode-map
+            (kbd "!") 'vc-got-backout)
 
 ;; TODO: async
 ;; TODO: return 0 or 1
