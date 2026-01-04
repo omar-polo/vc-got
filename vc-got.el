@@ -496,10 +496,6 @@ argument so that must also be given."
       (when (zerop (vc-got--call "branch"))
         (string-trim (buffer-string) "" "\n")))))
 
-(defun vc-got--integrate (branch)
-  "Integrate BRANCH into the current one."
-  (vc-got-command nil 0 nil "integrate" branch))
-
 (defun vc-got--update (branch &optional paths)
   "Update to a different commit or BRANCH.
 Optionally restrict the update operation to files at or within
@@ -847,9 +843,9 @@ merge.  Some actions take BRANCH argument."
   "Prompt for a branch and integrate it into the current one."
   (interactive)
   ;; XXX: be smart and try to "got rebase" if "got integrate" fails?
+  ;; XXX: is integrate blocked by some operations?
   (when-let* ((branch (vc-got--prompt-branch "Integrate with branch: ")))
-    ;; we could add
-    ;; handle state changes: continue, force, abort
+    ;; XXX: should we handle state changes: continue, force, abort
     ;; `vc-got-integrate' as separate command.
     (vc-got-command nil 0 nil "integrate" branch)
     ;; TODO: add customization to delete branch after integration
