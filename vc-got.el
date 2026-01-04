@@ -7,7 +7,7 @@
 ;; URL: https://projects.omarpolo.com/vc-got.html
 ;; Keywords: vc tools
 ;; Version: 1.2
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "24.4") (compat "30.1.0.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -140,6 +140,8 @@
 ;;
 ;; we should 1) investigate if also other backends do something like
 ;; this (or if there is a better way) and 2) try to do the same.
+
+(require 'compat)
 
 (eval-when-compile
   (require 'subr-x))
