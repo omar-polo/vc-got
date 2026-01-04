@@ -267,6 +267,31 @@ The output will be placed in the current buffer."
     (vc-got-with-worktree path
       (vc-got-command t nil path "info"))))
 
+(defun vc-got--cmds-in-progress ()
+  "Returns a list of commands which are in progress in the worktree."
+  (when-let* ((uuid (vc-got--work-tree-uuid default-directory)))
+    (with-temp-buffer
+      (vc-got-command t 0 nil "status")
+      (goto-char (point-min))
+      (let ((repo-dir (vc-got--repo-root))
+            (wt-base "refs/got/worktree")
+            cmds-in-progress)
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/backout-" uuid "-*")
+                                      repo-dir))
+          (push 'backout cmds-in-progress))
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/cherrypick-" uuid "-*")
+                                      repo-dir))
+          (push 'cherrypick cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is merging" nil t))
+          (push 'merge cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is rebasing" nil t))
+          (push 'rebase cmds-in-progress))
+        cmds-in-progress))))
+
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff)
   "Execute the log command in the worktree of PATH in the current buffer.
