@@ -233,7 +233,22 @@ assossiated with revisions along side the diff."
   :type '(choice (const :tag "No" nil)
                  (const :tag "Yes" t)))
 
-;; helpers
+;; internal variables
+
+(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
+  "Regexp to match commit lines.
+Provides capture group for the commit revision id.")
+
+(defconst vc-got--commit-header-re
+  (concat "^commit - \\([a-z0-9]+\\)\n"
+          "blob - \\([a-z0-9]+\\)\n"
+          "file \\+ .+\n"
+          "--- \\(.+\\)\n"
+          "\\+\\+\\+ \\(.+\\)\n")
+  "Regexp to match commit headers.")
+
+;; helper functions
+
 (defmacro vc-got--with-emacs-version<= (version &rest body)
   "Eval BODY only when the Emacs version in greater or equal VERSION."
   (declare (debug body)
@@ -755,14 +770,6 @@ populates it with files from a directory polled from user."
           '(("Author" . "-A"))
           comment)))
 
-(defconst vc-got--commit-header-re
-  (concat "^commit - \\([a-z0-9]+\\)\n"
-          "blob - \\([a-z0-9]+\\)\n"
-          "file \\+ .+\n"
-          "--- \\(.+\\)\n"
-          "\\+\\+\\+ \\(.+\\)\n")
-  "Regexp to match commit headers.")
-
 (defun vc-got-checkin-patch (patch-string comment)
   "Commit PATCH-STRING with COMMENT to repository."
   (let ((temp-patch-file (make-temp-file "got-patch")))
@@ -1115,10 +1122,6 @@ Provides capture groups for:
 1. revision id
 2. date of commit
 3. author of commit")
-
-(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
-  "Regexp to match commit lines.
-Provides capture group for the commit revision id.")
 
 (defun vc-got-annotate-time ()
   "Return the time of the next line of annotation at or after point.
