@@ -360,8 +360,6 @@ worktree."
            "^-----------------------------------------------$"))
         t))))
 
-(defalias 'vc-got-async-checkins #'ignore)
-
 (defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists (FILE STATUS STAGE-STATUS).
 DIR-OR-FILE can be either a directory or a file.  If FILES is
@@ -576,6 +574,8 @@ If optional COMMIT is given, start the new branch from it."
 (defun vc-got-update-on-retrieve-tag ()
   "Like vc-git, vc-got don't need to buffers on `retrieve-tag'."
   nil)
+
+(defalias 'vc-got-async-checkins #'ignore)
 
 
 ;; State-querying functions
