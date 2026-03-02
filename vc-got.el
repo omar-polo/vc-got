@@ -564,6 +564,14 @@ If optional COMMIT is given, start the new branch from it."
     (vc-got-with-worktree default-directory
       (vc-got-command nil 0 nil "branch" "-c" (or commit ":head") name))))
 
+(defun vc-got--dir-filter-files (files)
+  "Remove ., .. and .got from FILES."
+  (cl-loop for file in files
+           unless (or (string= file "..")
+                      (string= file ".")
+                      (string= file ".got"))
+           collect file))
+
 
 ;; Backend properties
 
@@ -607,14 +615,6 @@ If optional COMMIT is given, start the new branch from it."
           (if (eobp)
               'up-to-date
             (vc-got--parse-status-char (char-after))))))))
-
-(defun vc-got--dir-filter-files (files)
-  "Remove ., .. and .got from FILES."
-  (cl-loop for file in files
-           unless (or (string= file "..")
-                      (string= file ".")
-                      (string= file ".got"))
-           collect file))
 
 (defun vc-got-dir-status-files (dir files update-function)
   "Build the status for FILES in DIR.
