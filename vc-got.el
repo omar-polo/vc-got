@@ -105,6 +105,9 @@
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
 ;; - retrieve-tag                       DONE
+;; - working-branch                     NOT IMPLEMENTED
+;; - trunk-or-topic-p                   NOT IMPLEMENTED
+;; - topic-outgoing-base                NOT IMPLEMENTED
 ;;
 ;; MISCELLANEOUS
 ;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
@@ -233,7 +236,22 @@ assossiated with revisions along side the diff."
   :type '(choice (const :tag "No" nil)
                  (const :tag "Yes" t)))
 
-;; helpers
+;; internal variables
+
+(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
+  "Regexp to match commit lines.
+Provides capture group for the commit revision id.")
+
+(defconst vc-got--commit-header-re
+  (concat "^commit - \\([a-z0-9]+\\)\n"
+          "blob - \\([a-z0-9]+\\)\n"
+          "file \\+ .+\n"
+          "--- \\(.+\\)\n"
+          "\\+\\+\\+ \\(.+\\)\n")
+  "Regexp to match commit headers.")
+
+;; helper functions
+
 (defmacro vc-got--with-emacs-version<= (version &rest body)
   "Eval BODY only when the Emacs version in greater or equal VERSION."
   (declare (debug body)
@@ -301,6 +319,31 @@ The output will be placed in the current buffer."
     (vc-got-with-worktree path
       (vc-got-command t nil path "info"))))
 
+(defun vc-got--cmds-in-progress ()
+  "Returns a list of commands which are in progress in the worktree."
+  (when-let* ((uuid (vc-got--work-tree-uuid default-directory)))
+    (with-temp-buffer
+      (vc-got-command t 0 nil "status")
+      (goto-char (point-min))
+      (let ((repo-dir (vc-got--repo-root))
+            (wt-base "refs/got/worktree")
+            cmds-in-progress)
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/backout-" uuid "-*")
+                                      repo-dir))
+          (push 'backout cmds-in-progress))
+        (when (file-expand-wildcards (expand-file-name
+                                      (concat wt-base "/cherrypick-" uuid "-*")
+                                      repo-dir))
+          (push 'cherrypick cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is merging" nil t))
+          (push 'merge cmds-in-progress))
+        (when (save-excursion
+                (re-search-forward "Work tree is rebasing" nil t))
+          (push 'rebase cmds-in-progress))
+        cmds-in-progress))))
+
 (defun vc-got--log (&optional path limit start-commit stop-commit
                               search-pattern reverse include-diff
                               async shortlog file-changes)
@@ -344,24 +387,6 @@ worktree."
           (delete-matching-lines
            "^-----------------------------------------------$"))
         t))))
-
-(defun vc-got-show-log-entry (revision)
-  "Search for REVISION in current buffer and move to it."
-  (let (process-file-side-effects)
-    (goto-char (point-min))
-    (when revision
-      (let ((fmt (if (not (memq vc-log-view-type '(long log-search with-diff)))
-                     "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}"
-                   "^commit")))
-        (re-search-forward
-         (concat fmt "\\s" revision) nil t)))))
-
-(defun vc-got-comment-history (file)
-  "Show all log entries for given FILE."
-  (let (process-file-side-effects)
-    (vc-got-command "*vc-log*" 'async file "log")))
-
-(defalias 'vc-got-async-checkins #'ignore)
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
   "Return a list of lists (FILE STATUS STAGE-STATUS).
@@ -567,6 +592,14 @@ If optional COMMIT is given, start the new branch from it."
     (vc-got-with-worktree default-directory
       (vc-got-command nil 0 nil "branch" "-c" (or commit ":head") name))))
 
+(defun vc-got--dir-filter-files (files)
+  "Remove ., .. and .got from FILES."
+  (cl-loop for file in files
+           unless (or (string= file "..")
+                      (string= file ".")
+                      (string= file ".got"))
+           collect file))
+
 
 ;; Backend properties
 
@@ -577,6 +610,8 @@ If optional COMMIT is given, start the new branch from it."
 (defun vc-got-update-on-retrieve-tag ()
   "Like vc-git, vc-got don't need to buffers on `retrieve-tag'."
   nil)
+
+(defalias 'vc-got-async-checkins #'ignore)
 
 
 ;; State-querying functions
@@ -608,14 +643,6 @@ If optional COMMIT is given, start the new branch from it."
           (if (eobp)
               'up-to-date
             (vc-got--parse-status-char (char-after))))))))
-
-(defun vc-got--dir-filter-files (files)
-  "Remove ., .. and .got from FILES."
-  (cl-loop for file in files
-           unless (or (string= file "..")
-                      (string= file ".")
-                      (string= file ".got"))
-           collect file))
 
 (defun vc-got-dir-status-files (dir files update-function)
   "Build the status for FILES in DIR.
@@ -754,14 +781,6 @@ populates it with files from a directory polled from user."
          (log-edit-extract-headers
           '(("Author" . "-A"))
           comment)))
-
-(defconst vc-got--commit-header-re
-  (concat "^commit - \\([a-z0-9]+\\)\n"
-          "blob - \\([a-z0-9]+\\)\n"
-          "file \\+ .+\n"
-          "--- \\(.+\\)\n"
-          "\\+\\+\\+ \\(.+\\)\n")
-  "Regexp to match commit headers.")
 
 (defun vc-got-checkin-patch (patch-string comment)
   "Commit PATCH-STRING with COMMENT to repository."
@@ -1057,6 +1076,22 @@ Heavily inspired by `vc-git-log-view-mode'."
                   (2 'change-log-email))
                  ("^date: \\(.+\\)" (1 'change-log-date))))))
 
+(defun vc-got-show-log-entry (revision)
+  "Search for REVISION in current buffer and move to it."
+  (let (process-file-side-effects)
+    (goto-char (point-min))
+    (when revision
+      (let ((fmt (if (not (memq vc-log-view-type '(long log-search with-diff)))
+                     "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}"
+                   "^commit")))
+        (re-search-forward
+         (concat fmt "\\s" revision) nil t)))))
+
+(defun vc-got-comment-history (file)
+  "Show all log entries for given FILE."
+  (let (process-file-side-effects)
+    (vc-got-command "*vc-log*" 'async file "log")))
+
 ;; TODO: return 0 or 1
 (defun vc-got-diff (files &optional rev1 rev2 buffer async)
   "Insert into BUFFER (or *vc-diff*) the diff for FILES from REV1 to REV2."
@@ -1115,10 +1150,6 @@ Provides capture groups for:
 1. revision id
 2. date of commit
 3. author of commit")
-
-(defconst vc-got--commit-re "^commit \\([a-z0-9]+\\)"
-  "Regexp to match commit lines.
-Provides capture group for the commit revision id.")
 
 (defun vc-got-annotate-time ()
   "Return the time of the next line of annotation at or after point.
