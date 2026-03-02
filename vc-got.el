@@ -105,6 +105,9 @@
 ;; TAG SYSTEM
 ;; - create-tag                         DONE
 ;; - retrieve-tag                       DONE
+;; - working-branch                     NOT IMPLEMENTED
+;; - trunk-or-topic-p                   NOT IMPLEMENTED
+;; - topic-outgoing-base                NOT IMPLEMENTED
 ;;
 ;; MISCELLANEOUS
 ;; - make-version-backups-p             NOT NEEDED, `got' works fine locally
