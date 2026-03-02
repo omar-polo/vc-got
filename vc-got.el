@@ -360,22 +360,6 @@ worktree."
            "^-----------------------------------------------$"))
         t))))
 
-(defun vc-got-show-log-entry (revision)
-  "Search for REVISION in current buffer and move to it."
-  (let (process-file-side-effects)
-    (goto-char (point-min))
-    (when revision
-      (let ((fmt (if (not (memq vc-log-view-type '(long log-search with-diff)))
-                     "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}"
-                   "^commit")))
-        (re-search-forward
-         (concat fmt "\\s" revision) nil t)))))
-
-(defun vc-got-comment-history (file)
-  "Show all log entries for given FILE."
-  (let (process-file-side-effects)
-    (vc-got-command "*vc-log*" 'async file "log")))
-
 (defalias 'vc-got-async-checkins #'ignore)
 
 (defun vc-got--status (status-codes dir-or-file &optional files)
@@ -1063,6 +1047,22 @@ Heavily inspired by `vc-git-log-view-mode'."
                   (1 'change-log-name)
                   (2 'change-log-email))
                  ("^date: \\(.+\\)" (1 'change-log-date))))))
+
+(defun vc-got-show-log-entry (revision)
+  "Search for REVISION in current buffer and move to it."
+  (let (process-file-side-effects)
+    (goto-char (point-min))
+    (when revision
+      (let ((fmt (if (not (memq vc-log-view-type '(long log-search with-diff)))
+                     "^[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}"
+                   "^commit")))
+        (re-search-forward
+         (concat fmt "\\s" revision) nil t)))))
+
+(defun vc-got-comment-history (file)
+  "Show all log entries for given FILE."
+  (let (process-file-side-effects)
+    (vc-got-command "*vc-log*" 'async file "log")))
 
 ;; TODO: return 0 or 1
 (defun vc-got-diff (files &optional rev1 rev2 buffer async)
